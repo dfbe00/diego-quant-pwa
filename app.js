@@ -1,4 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  openLocalDB,
+  requestPersistentStorage,
+  idbSetKV,
+  idbGetKV,
+  idbReplaceAll,
+  idbPutItem,
+  idbDeleteItem,
+  idbGetAll,
+  enqueueOfflineAction,
+  flushOfflineQueue,
+  exportDatabaseBackupJSON,
+  importDatabaseBackupJSON,
+  STORES,
+} from "./db.js";
 
 const SUPABASE_URL = "https://ytzvufrmenpqjelkbthm.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -199,10 +214,12 @@ window.switchSection = (secName) => {
   document.getElementById("app-sidebar")?.classList.add("hidden");
   document.getElementById("sidebar-backdrop")?.classList.add("hidden");
 
-  if (secName === "btg") window.refreshBtgPortfolio();
-  if (secName === "explore" && marketCatalog.length === 0) loadExploreCatalog();
-  if (secName === "options" && optionsChainData.contracts.length === 0) window.loadOptionsChain("NVDA");
-  if (secName === "news") window.loadMarketNews();
+  idbSetKV("activeSection", secName).catch(() => {});
+
+  if (secName === "btg" && navigator.onLine) window.refreshBtgPortfolio();
+  if (secName === "explore" && marketCatalog.length === 0 && navigator.onLine) loadExploreCatalog();
+  if (secName === "options" && optionsChainData.contracts.length === 0 && navigator.onLine) window.loadOptionsChain("NVDA");
+  if (secName === "news" && navigator.onLine) window.loadMarketNews();
   if (secName === "chat") {
     const box = document.getElementById("chat-messages-box");
     if (box) box.scrollTop = box.scrollHeight;
@@ -405,15 +422,20 @@ function renderPortfolio() {
 async function loadExploreCatalog(query = "") {
   const container = document.getElementById("explore-sections-container");
   if (container && marketCatalog.length === 0) {
-    container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">Cargando mercado desde Alpaca...</div>`;
+    container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">Cargando mercado...</div>`;
+  }
+  if (!navigator.onLine) {
+    renderExploreSections();
+    return;
   }
   try {
     const res = await callEngine("explore_market", { query });
     marketCatalog = res.catalog || [];
     customSearchResults = res.customResults || [];
+    await idbSetKV("marketCatalog", marketCatalog);
     renderExploreSections();
   } catch (err) {
-    showToast(`Error: ${err.message}`, "rose");
+    renderExploreSections();
   }
 }
 
@@ -955,14 +977,27 @@ window.refreshBtgPortfolio = async () => {
 };
 
 window.createBreakEvenMonitor = async (symbol, name) => {
-  const { error } = await supabase.from("scheduled_monitors").insert({
+  const newMon = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `mon_${Date.now()}`,
     portfolio: "btg",
     symbol,
     condition_type: "pnl_pct_gte",
     target_value: 0,
     description: `Avisar por Telegram cuando ${name} (${symbol}) llegue a 0% de rendimiento y deje de ser negativa`,
     status: "ACTIVE",
-  });
+    created_at: new Date().toISOString(),
+  };
+  await idbPutItem(STORES.MONITORS, newMon);
+  monitorsData.unshift(newMon);
+  renderBtgPortfolio();
+
+  if (!navigator.onLine) {
+    await enqueueOfflineAction({ type: "INSERT_MONITOR", payload: newMon });
+    showToast(`Alerta guardada en IndexedDB (Offline): se sincronizará al volver internet.`);
+    return;
+  }
+
+  const { error } = await supabase.from("scheduled_monitors").insert(newMon);
   if (error) showToast(`Error: ${error.message}`, "rose");
   else {
     showToast(`Alerta creada: Te avisaremos por Telegram cuando ${symbol} llegue a 0%.`);
@@ -971,13 +1006,24 @@ window.createBreakEvenMonitor = async (symbol, name) => {
 };
 
 window.deleteBtgPosition = async (id) => {
-  await supabase.from("btg_positions").delete().eq("id", id);
-  await loadDatabaseData();
+  const target = btgPositionsData.find((p) => p.id === id);
+  if (target) await idbDeleteItem(STORES.BTG, target.symbol);
+  btgPositionsData = btgPositionsData.filter((p) => p.id !== id);
+  renderBtgPortfolio();
+  if (navigator.onLine) {
+    await supabase.from("btg_positions").delete().eq("id", id);
+    await loadDatabaseData();
+  }
 };
 
 window.deleteMonitor = async (id) => {
-  await supabase.from("scheduled_monitors").delete().eq("id", id);
-  await loadDatabaseData();
+  await idbDeleteItem(STORES.MONITORS, id);
+  monitorsData = monitorsData.filter((m) => m.id !== id);
+  renderBtgPortfolio();
+  if (navigator.onLine) {
+    await supabase.from("scheduled_monitors").delete().eq("id", id);
+    await loadDatabaseData();
+  }
 };
 
 async function handleBtgPhotoUpload(file, caption = "") {
@@ -1206,60 +1252,149 @@ window.stopVoiceCapture = () => {
   document.getElementById("voice-status-banner")?.classList.add("hidden");
 };
 
+// Hydrate immediately from local IndexedDB so the app works 100% offline with 0ms delay
+async function hydrateFromIndexedDB() {
+  try {
+    await openLocalDB();
+    const [wl, sigs, chats, btgPos, mons, savedPortfolio, savedCatalog, savedUi, savedCurr, savedSec] =
+      await Promise.all([
+        idbGetAll(STORES.WATCHLIST),
+        idbGetAll(STORES.SIGNALS),
+        idbGetAll(STORES.CHAT),
+        idbGetAll(STORES.BTG),
+        idbGetAll(STORES.MONITORS),
+        idbGetKV("portfolioState"),
+        idbGetKV("marketCatalog"),
+        idbGetKV("uiConfig"),
+        idbGetKV("displayCurrency"),
+        idbGetKV("activeSection"),
+      ]);
+
+    if (wl.length > 0) watchlistData = wl;
+    if (sigs.length > 0) {
+      signalsData = sigs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    if (chats.length > 0) {
+      chatData = chats.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }
+    if (btgPos.length > 0) btgPositionsData = btgPos;
+    if (mons.length > 0) monitorsData = mons;
+    if (savedPortfolio) portfolioState = savedPortfolio;
+    if (savedCatalog && savedCatalog.length > 0) marketCatalog = savedCatalog;
+    if (savedUi) uiConfig = { ...uiConfig, ...savedUi };
+    if (savedCurr) displayCurrency = savedCurr;
+
+    applyDynamicUiConfig();
+    renderPortfolio();
+    renderSignals();
+    renderWatchlist();
+    renderBtgPortfolio();
+    renderExploreSections();
+    renderChat();
+
+    if (savedSec && savedSec !== "dashboard") {
+      window.switchSection(savedSec);
+    }
+  } catch (e) {
+    console.warn("IndexedDB hydration warning:", e);
+  }
+}
+
 async function loadDatabaseData() {
+  if (!navigator.onLine) {
+    await hydrateFromIndexedDB();
+    return;
+  }
+
   const prevPendingIds = new Set(signalsData.filter((s) => s.status === "PENDING_CONFIRMATION").map((s) => s.id));
 
-  const [{ data: wl }, { data: sigs }, { data: chats }, { data: cfg }, { data: btgPos }, { data: mons }] = await Promise.all([
-    supabase.from("watchlist").select("*").order("category").order("symbol"),
-    supabase.from("trade_signals").select("*").order("created_at", { ascending: false }).limit(30),
-    supabase.from("chat_messages").select("*").order("created_at", { ascending: true }).limit(50),
-    supabase.from("strategy_config").select("*").eq("id", 1).maybeSingle(),
-    supabase.from("btg_positions").select("*").order("symbol"),
-    supabase.from("scheduled_monitors").select("*").order("created_at", { ascending: false }),
-  ]);
+  try {
+    const [{ data: wl }, { data: sigs }, { data: chats }, { data: cfg }, { data: btgPos }, { data: mons }] = await Promise.all([
+      supabase.from("watchlist").select("*").order("category").order("symbol"),
+      supabase.from("trade_signals").select("*").order("created_at", { ascending: false }).limit(30),
+      supabase.from("chat_messages").select("*").order("created_at", { ascending: true }).limit(50),
+      supabase.from("strategy_config").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("btg_positions").select("*").order("symbol"),
+      supabase.from("scheduled_monitors").select("*").order("created_at", { ascending: false }),
+    ]);
 
-  watchlistData = wl || [];
-  signalsData = sigs || [];
-  chatData = chats || [];
-  btgPositionsData = btgPos || [];
-  monitorsData = mons || [];
+    watchlistData = wl || watchlistData;
+    signalsData = sigs || signalsData;
+    chatData = chats || chatData;
+    btgPositionsData = btgPos || btgPositionsData;
+    monitorsData = mons || monitorsData;
 
-  for (const s of signalsData) {
-    if (s.status === "PENDING_CONFIRMATION" && prevPendingIds.size > 0 && !prevPendingIds.has(s.id)) {
-      sendLocalPushNotification(
-        `Nueva orden por confirmar: ${s.symbol}`,
-        s.indicators?.simple_explanation || s.trigger_reason,
-        "signals"
-      );
+    for (const s of signalsData) {
+      if (s.status === "PENDING_CONFIRMATION" && prevPendingIds.size > 0 && !prevPendingIds.has(s.id)) {
+        sendLocalPushNotification(
+          `Nueva orden por confirmar: ${s.symbol}`,
+          s.indicators?.simple_explanation || s.trigger_reason,
+          "signals"
+        );
+      }
     }
-  }
 
-  if (cfg) {
-    document.getElementById("cfg-sl").value = cfg.stop_loss_pct;
-    document.getElementById("cfg-max-pos").value = cfg.max_position_pct;
-    document.getElementById("cfg-rsi-buy").value = cfg.rsi_oversold;
-    document.getElementById("cfg-rsi-sell").value = cfg.rsi_overbought;
-    if (cfg.ui_config) {
-      uiConfig = { ...uiConfig, ...cfg.ui_config };
-      applyDynamicUiConfig();
+    if (cfg) {
+      document.getElementById("cfg-sl").value = cfg.stop_loss_pct;
+      document.getElementById("cfg-max-pos").value = cfg.max_position_pct;
+      document.getElementById("cfg-rsi-buy").value = cfg.rsi_oversold;
+      document.getElementById("cfg-rsi-sell").value = cfg.rsi_overbought;
+      if (cfg.ui_config) {
+        uiConfig = { ...uiConfig, ...cfg.ui_config };
+        applyDynamicUiConfig();
+      }
     }
-  }
 
-  renderSignals();
-  renderWatchlist();
-  renderBtgPortfolio();
-  renderChat();
+    // Persist everything to IndexedDB for instant offline access
+    await Promise.all([
+      idbReplaceAll(STORES.WATCHLIST, watchlistData),
+      idbReplaceAll(STORES.SIGNALS, signalsData),
+      idbReplaceAll(STORES.CHAT, chatData),
+      idbReplaceAll(STORES.BTG, btgPositionsData),
+      idbReplaceAll(STORES.MONITORS, monitorsData),
+      idbSetKV("uiConfig", uiConfig),
+      idbSetKV("lastSyncAt", new Date().toISOString()),
+    ]);
+
+    renderSignals();
+    renderWatchlist();
+    renderBtgPortfolio();
+    renderChat();
+  } catch {
+    await hydrateFromIndexedDB();
+  }
 }
 
 async function loadAlpacaPortfolio(period = "1M") {
+  if (!navigator.onLine) {
+    renderPortfolio();
+    return;
+  }
   try {
     const data = await callEngine("get_portfolio", { period });
     portfolioState = data;
+    await idbSetKV("portfolioState", portfolioState);
     renderPortfolio();
   } catch {
     renderPortfolio();
   }
 }
+
+window.exportBackupJSON = async () => {
+  try {
+    const backup = await exportDatabaseBackupJSON();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `steady-signal-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast("Copia de seguridad (.json) exportada correctamente.");
+  } catch (err) {
+    showToast(`Error exportando respaldo: ${err.message}`, "rose");
+  }
+};
 
 window.refreshAll = async () => {
   showToast("Actualizando portafolio...");
@@ -1356,12 +1491,72 @@ async function initAuthenticatedApp() {
   updatePushButtonUI();
   if (window.lucide) window.lucide.createIcons();
 
-  setupRealtime();
-  await Promise.all([loadDatabaseData(), loadAlpacaPortfolio(), loadExploreCatalog()]);
+  // Save authorized owner unlock state in IndexedDB so offline launches open immediately
+  await idbSetKV("cachedOwnerUnlocked", true);
+
+  // 1. Hydrate from IndexedDB first (instant 0ms load even if offline!)
+  await hydrateFromIndexedDB();
+
+  // 2. If online, connect Realtime & refresh fresh data in background
+  if (navigator.onLine) {
+    setupRealtime();
+    await Promise.all([loadDatabaseData(), loadAlpacaPortfolio(), loadExploreCatalog()]);
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.lucide) window.lucide.createIcons();
+
+  // 1. Request Persistent Storage (IndexedDB protection on iOS & Android)
+  const isPersisted = await requestPersistentStorage();
+  const persistBadge = document.getElementById("storage-persist-status");
+  if (persistBadge) {
+    persistBadge.textContent = isPersisted ? "IndexedDB Persistente Activo" : "IndexedDB Local Activo";
+  }
+
+  // 2. Online / Offline Status Listener & Automatic Queue Sync
+  const updateNetworkUI = async () => {
+    const dot = document.getElementById("network-status-dot");
+    const txt = document.getElementById("network-status-text");
+    const online = navigator.onLine;
+    if (dot) dot.className = `w-2 h-2 rounded-full ${online ? "bg-zesty-green-400" : "bg-amber-400"}`;
+    if (txt) txt.textContent = online ? "Online · IndexedDB" : "Modo Offline · IndexedDB";
+    if (online) {
+      const synced = await flushOfflineQueue(async (item) => {
+        if (item.type === "UPSERT_BTG") {
+          await callEngine("upsert_btg_position", item.payload);
+        } else if (item.type === "INSERT_MONITOR") {
+          await supabase.from("scheduled_monitors").insert(item.payload);
+        }
+      });
+      if (synced > 0) {
+        showToast(`Se sincronizaron ${synced} cambio(s) guardados sin conexión.`);
+        await loadDatabaseData();
+      }
+    }
+  };
+  window.addEventListener("online", updateNetworkUI);
+  window.addEventListener("offline", updateNetworkUI);
+  updateNetworkUI();
+
+  // 3. JSON Backup Import Listener
+  document.getElementById("import-backup-input")?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || "{}"));
+        await importDatabaseBackupJSON(parsed);
+        await hydrateFromIndexedDB();
+        showToast("Respaldo JSON restaurado en IndexedDB correctamente.");
+      } catch (err) {
+        showToast(`Error importando JSON: ${err.message}`, "rose");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
@@ -1543,14 +1738,36 @@ document.addEventListener("DOMContentLoaded", async () => {
       const currency = document.getElementById("btg-curr").value;
       const qty = Number(document.getElementById("btg-qty").value);
       const avg_buy_price = Number(document.getElementById("btg-buy-price").value);
-      await callEngine("upsert_btg_position", {
+      const payload = {
         symbol,
         name,
         market: currency === "CLP" ? "CL" : "US",
         currency,
         qty,
         avg_buy_price,
-      });
+      };
+
+      if (!navigator.onLine) {
+        const offlinePos = {
+          id: crypto.randomUUID ? crypto.randomUUID() : `btg_${Date.now()}`,
+          ...payload,
+          current_price: avg_buy_price,
+          invested_amount: qty * avg_buy_price,
+          market_value: qty * avg_buy_price,
+          pnl_amount: 0,
+          pnl_pct: 0,
+          last_updated_at: new Date().toISOString(),
+        };
+        await idbPutItem(STORES.BTG, offlinePos);
+        await enqueueOfflineAction({ type: "UPSERT_BTG", payload });
+        document.getElementById("btg-manual-form").reset();
+        document.getElementById("btg-manual-form").classList.add("hidden");
+        await hydrateFromIndexedDB();
+        showToast("Guardado en IndexedDB (Offline): se sincronizará al volver internet.");
+        return;
+      }
+
+      await callEngine("upsert_btg_position", payload);
       document.getElementById("btg-manual-form").reset();
       document.getElementById("btg-manual-form").classList.add("hidden");
       await loadDatabaseData();
@@ -1612,15 +1829,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("logout-btn")?.addEventListener("click", async () => {
-    await supabase.auth.signOut();
+    await idbSetKV("cachedOwnerUnlocked", false);
+    if (navigator.onLine) await supabase.auth.signOut().catch(() => {});
     window.location.reload();
   });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session && session.user?.email?.toLowerCase() === OWNER_EMAIL) {
+  // Unlock immediately if authenticated session exists OR if offline with cached owner unlock in IndexedDB
+  const cachedUnlocked = await idbGetKV("cachedOwnerUnlocked", false);
+  if (!navigator.onLine && cachedUnlocked) {
     initAuthenticatedApp();
+  } else {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    if ((session && session.user?.email?.toLowerCase() === OWNER_EMAIL) || cachedUnlocked) {
+      initAuthenticatedApp();
+    }
   }
 
   document.getElementById("login-form")?.addEventListener("submit", async (e) => {

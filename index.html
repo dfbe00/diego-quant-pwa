@@ -2,16 +2,19 @@
 <html lang="es" class="light" style="color-scheme: light;">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Steady Signal</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Steady Signal" />
   <meta name="theme-color" content="#4C1D95" />
   <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
-  <link rel="apple-touch-icon" href="./icon.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -152,6 +155,13 @@
           </div>
         </div>
         <div class="flex items-center gap-2.5">
+          <span
+            id="network-status-pill"
+            class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-white/90 flex items-center gap-1.5"
+          >
+            <span id="network-status-dot" class="w-2 h-2 rounded-full bg-zesty-green-400"></span>
+            <span id="network-status-text" class="hidden md:inline">Online · IndexedDB</span>
+          </span>
           <button
             id="push-perm-btn"
             title="Notificaciones"
@@ -889,6 +899,34 @@
               <button id="test-telegram-btn" class="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2 text-xs font-medium">
                 Enviar prueba a @dfbe00_inversiones2_bot
               </button>
+            </div>
+          </div>
+
+          <!-- Offline-First IndexedDB & JSON Backup Section -->
+          <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-6 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold">Almacenamiento Offline-First (IndexedDB) y Copia de Seguridad</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Tus datos se guardan automáticamente en IndexedDB en tu teléfono para abrir al instante sin conexión a internet.
+                </p>
+              </div>
+              <span id="storage-persist-status" class="text-xs px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                IndexedDB Activo
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onclick="window.exportBackupJSON()"
+                class="rounded-xl bg-zesty-purple-500 px-4 py-2 text-xs text-white font-medium"
+              >
+                Exportar respaldo (.json)
+              </button>
+              <label class="cursor-pointer rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+                <span>Importar respaldo (.json)</span>
+                <input id="import-backup-input" type="file" accept=".json,application/json" class="hidden" />
+              </label>
             </div>
           </div>
 
