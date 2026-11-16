@@ -594,48 +594,123 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- 3. OPCIONES (CALLS & PUTS)                 -->
+        <!-- 3. OPCIONES (ESTILO YAHOO FINANCE)         -->
         <!-- ========================================== -->
-        <section id="sec-options" class="hidden min-h-dvh p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
-          <div class="flex flex-col gap-1">
-            <h1 class="text-2xl font-bold">Opciones</h1>
-            <span class="text-sm text-slate-500 dark:text-slate-400">
-              Contratos Calls y Puts habilitados en tu cuenta Alpaca (Nivel 3). Cada contrato equivale a 100 acciones.
-            </span>
-          </div>
+        <section id="sec-options" class="hidden min-h-dvh p-4 sm:p-6 max-w-6xl mx-auto space-y-4">
+          <!-- Top Bar: Underlying Quote + Quick Ticker Selector -->
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-baseline gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h1 id="opt-header-symbol" class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">NVDA</h1>
+                  <span id="opt-header-name" class="text-sm text-slate-500 dark:text-slate-400">NVIDIA Corporation</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-0.5">
+                  <span id="opt-header-price" class="text-xl font-bold text-slate-900 dark:text-white">0.00</span>
+                  <span id="opt-header-change" class="text-xs font-semibold text-emerald-500">+0.00%</span>
+                  <span class="text-[11px] text-slate-400">· Alpaca Options Level 3 (1 contrato = 100 acciones)</span>
+                </div>
+              </div>
+            </div>
 
-          <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-zesty-purple-50 dark:bg-slate-900/20">
             <div class="flex flex-wrap items-center gap-1.5">
-              <button onclick="window.loadOptionsChain('NVDA')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">NVDA</button>
-              <button onclick="window.loadOptionsChain('SPY')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">SPY</button>
-              <button onclick="window.loadOptionsChain('AAPL')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">AAPL</button>
-              <button onclick="window.loadOptionsChain('TSLA')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">TSLA</button>
-              <button onclick="window.loadOptionsChain('QQQ')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">QQQ</button>
-              <button onclick="window.loadOptionsChain('GLD')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">GLD</button>
-              <button onclick="window.loadOptionsChain('TLT')" class="px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500">TLT</button>
-              <input
-                id="opt-custom-symbol"
-                type="text"
-                placeholder="Otro ticker..."
-                class="w-28 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs uppercase"
-              />
-              <button
-                onclick="window.loadOptionsChain(document.getElementById('opt-custom-symbol').value || 'NVDA')"
-                class="px-3.5 py-1.5 rounded-lg bg-zesty-purple-500 text-white text-xs font-medium"
-              >
-                Buscar
-              </button>
-            </div>
-
-            <div class="flex gap-1.5">
-              <button onclick="window.filterOptionsType('ALL')" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">Todos</button>
-              <button onclick="window.filterOptionsType('call')" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">Calls</button>
-              <button onclick="window.filterOptionsType('put')" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">Puts</button>
+              <button onclick="window.loadOptionsChain('NVDA')" data-opt-sym="NVDA" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">NVDA</button>
+              <button onclick="window.loadOptionsChain('TSLA')" data-opt-sym="TSLA" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">TSLA</button>
+              <button onclick="window.loadOptionsChain('SPY')" data-opt-sym="SPY" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">SPY</button>
+              <button onclick="window.loadOptionsChain('AAPL')" data-opt-sym="AAPL" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">AAPL</button>
+              <button onclick="window.loadOptionsChain('QQQ')" data-opt-sym="QQQ" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">QQQ</button>
+              <button onclick="window.loadOptionsChain('GLD')" data-opt-sym="GLD" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">GLD</button>
+              <button onclick="window.loadOptionsChain('TLT')" data-opt-sym="TLT" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500">TLT</button>
+              <form onsubmit="event.preventDefault(); window.loadOptionsChain(document.getElementById('opt-custom-symbol').value || 'NVDA');" class="flex items-center gap-1">
+                <input
+                  id="opt-custom-symbol"
+                  type="text"
+                  placeholder="Ticker (ej. AMD)..."
+                  class="w-28 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs uppercase focus:outline-none focus:border-sky-500"
+                />
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium"
+                >
+                  Buscar
+                </button>
+              </form>
             </div>
           </div>
 
-          <div id="options-underlying-banner" class="text-xs text-slate-500"></div>
-          <div id="options-chain-list" class="flex flex-col gap-1.5"></div>
+          <!-- Yahoo Finance Sub-Navigation Tabs -->
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              data-opt-tab="chain"
+              onclick="window.setOptionsSubTab('chain')"
+              class="opt-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-600 dark:bg-[#1E3A8A]/70 dark:text-[#60A5FA]"
+            >
+              Options Chain
+            </button>
+            <button
+              type="button"
+              data-opt-tab="volume"
+              onclick="window.setOptionsSubTab('volume')"
+              class="opt-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Volume
+            </button>
+            <button
+              type="button"
+              data-opt-tab="oi"
+              onclick="window.setOptionsSubTab('oi')"
+              class="opt-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Open Interest
+            </button>
+          </div>
+
+          <!-- Yahoo Finance Rounded Pill Filter Dropdowns -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            <select
+              id="opt-exp-filter"
+              onchange="window.renderOptionsChain()"
+              class="rounded-full px-4 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#131722] text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="ALL">All Expirations</option>
+            </select>
+
+            <select
+              id="opt-strike-filter"
+              onchange="window.renderOptionsChain()"
+              class="rounded-full px-4 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#131722] text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="ALL">All Strike Prices</option>
+              <option value="ITM">In The Money</option>
+              <option value="OTM">Out Of The Money</option>
+              <option value="NEAR">Near The Money (±15%)</option>
+            </select>
+
+            <select
+              id="opt-view-filter"
+              onchange="window.renderOptionsChain()"
+              class="rounded-full px-4 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#131722] text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="LIST">List</option>
+              <option value="STRADDLE">Straddle (Side-by-Side)</option>
+            </select>
+
+            <select
+              id="opt-type-filter"
+              onchange="window.filterOptionsType(this.value)"
+              class="rounded-full px-4 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#131722] text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="ALL">All Options</option>
+              <option value="call">Calls Only</option>
+              <option value="put">Puts Only</option>
+            </select>
+          </div>
+
+          <div id="options-underlying-banner" class="hidden"></div>
+
+          <!-- Options Chain Tables Container (Calls & Puts) -->
+          <div id="options-chain-list" class="space-y-8"></div>
         </section>
 
         <!-- ========================================== -->
@@ -1058,6 +1133,63 @@
             </button>
             <button id="modal-options-btn" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium">
               Ver opciones
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option Contract Detail & Order Modal -->
+    <div id="option-contract-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="w-full max-w-lg rounded-t-2xl sm:rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-xl space-y-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="opt-modal-type-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded bg-sky-500/20 text-sky-600 dark:text-sky-400 uppercase">CALL</span>
+              <h3 id="opt-modal-symbol" class="text-base font-bold font-mono text-slate-900 dark:text-white">NVDA261120C00140000</h3>
+            </div>
+            <p id="opt-modal-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Strike $140.00 · Vence 2026-11-20</p>
+          </div>
+          <button onclick="window.closeOptionContractModal()" class="p-1 text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-xs">
+          <div>
+            <span class="text-[10px] text-slate-400 block">Last Price</span>
+            <span id="opt-modal-last" class="font-bold text-slate-900 dark:text-white">$0.00</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Bid / Ask</span>
+            <span id="opt-modal-bidask" class="font-semibold text-slate-800 dark:text-slate-200">$0.00 / $0.00</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Implied Vol.</span>
+            <span id="opt-modal-iv" class="font-semibold text-slate-800 dark:text-slate-200">0.00%</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Costo x100 acc.</span>
+            <span id="opt-modal-total" class="font-bold text-sky-600 dark:text-sky-400">US $0</span>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-lg bg-sky-50/70 dark:bg-[#0B3B5B]/40 border border-sky-200 dark:border-sky-800/70 space-y-1">
+          <p class="text-xs font-semibold text-slate-900 dark:text-white">Explicación sencilla</p>
+          <p id="opt-modal-simple" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div class="flex items-center gap-2 text-xs">
+            <label class="text-slate-500">Contratos:</label>
+            <input id="opt-modal-qty" type="number" min="1" max="50" value="1" class="w-20 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold" />
+          </div>
+          <div class="flex gap-2">
+            <button onclick="window.closeOptionContractModal()" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium">
+              Cancelar
+            </button>
+            <button id="opt-modal-confirm-btn" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold">
+              Preparar orden en Alpaca
             </button>
           </div>
         </div>

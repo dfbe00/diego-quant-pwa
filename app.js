@@ -605,87 +605,419 @@ window.closeAssetModal = () => {
   document.getElementById("asset-modal").classList.add("hidden");
 };
 
-// Options Chain
+// Options Chain (Yahoo Finance Layout: Calls & Puts tables, ITM highlight, Expiration/Strike/View filters)
+let optionsSubTab = "chain";
+
+function fmtYahooExpDate(isoDate) {
+  if (!isoDate || isoDate === "ALL") return "All Expirations";
+  const parts = String(isoDate).split("-");
+  if (parts.length !== 3) return isoDate;
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function fmtYahooLastTradeDate(isoStr) {
+  if (!isoStr) {
+    const now = new Date();
+    return (
+      now.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) +
+      " " +
+      now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+    );
+  }
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return String(isoStr);
+  return (
+    d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) +
+    " " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  );
+}
+
+window.setOptionsSubTab = (tab) => {
+  optionsSubTab = tab || "chain";
+  document.querySelectorAll(".opt-subtab-btn").forEach((btn) => {
+    const active = btn.getAttribute("data-opt-tab") === optionsSubTab;
+    btn.className = active
+      ? "opt-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-600 dark:bg-[#1E3A8A]/70 dark:text-[#60A5FA]"
+      : "opt-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800";
+  });
+  renderOptionsChain();
+};
+
 window.loadOptionsChain = async (underlying) => {
   const sym = (underlying || "NVDA").trim().toUpperCase();
   const listEl = document.getElementById("options-chain-list");
-  const bannerEl = document.getElementById("options-underlying-banner");
-  if (listEl) listEl.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">Cargando contratos de ${sym}...</div>`;
+
+  document.querySelectorAll(".opt-sym-btn").forEach((btn) => {
+    const isActive = btn.getAttribute("data-opt-sym") === sym;
+    btn.className = isActive
+      ? "opt-sym-btn px-3 py-1.5 rounded-lg bg-sky-600 text-white border border-sky-600 text-xs font-semibold"
+      : "opt-sym-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-sky-500";
+  });
+
+  if (listEl) {
+    listEl.innerHTML = `<div class="py-12 text-center text-xs text-slate-400">Cargando cadena de opciones estilo Yahoo Finance para ${sym}...</div>`;
+  }
+
+  if (!navigator.onLine) {
+    const cached = await idbGetKV("optionsChainData");
+    if (cached && cached.contracts) {
+      optionsChainData = cached;
+      populateExpirationFilter(optionsChainData.contracts);
+      updateOptionsHeaderUI();
+      renderOptionsChain();
+      return;
+    }
+  }
+
   try {
     const res = await callEngine("get_options_chain", { symbol: sym });
     optionsChainData = res;
-    if (bannerEl) {
-      bannerEl.textContent = `${res.underlying} · Precio actual: US $${res.underlyingPrice} · ${res.contracts.length} contratos disponibles`;
-    }
+    await idbSetKV("optionsChainData", res);
+    populateExpirationFilter(res.contracts || []);
+    updateOptionsHeaderUI();
     renderOptionsChain();
   } catch (err) {
     if (listEl) listEl.innerHTML = `<div class="p-4 text-xs text-zesty-red-500">Error: ${err.message}</div>`;
   }
 };
 
+function updateOptionsHeaderUI() {
+  const symEl = document.getElementById("opt-header-symbol");
+  const nameEl = document.getElementById("opt-header-name");
+  const priceEl = document.getElementById("opt-header-price");
+  const chgEl = document.getElementById("opt-header-change");
+
+  const sym = optionsChainData.underlying || "NVDA";
+  const spot = Number(optionsChainData.underlyingPrice || 0);
+  const chgPct = Number(optionsChainData.underlyingChangePct || 0);
+  const catItem = marketCatalog.find((m) => m.symbol === sym);
+  const compName = optionsChainData.underlyingName || catItem?.name || `${sym} Corp.`;
+
+  if (symEl) symEl.textContent = sym;
+  if (nameEl) nameEl.textContent = compName;
+  if (priceEl) priceEl.textContent = spot.toFixed(2);
+  if (chgEl) {
+    const isUp = chgPct >= 0;
+    chgEl.textContent = `${isUp ? "+" : ""}${chgPct.toFixed(2)}%`;
+    chgEl.className = `text-xs font-semibold ${isUp ? "text-emerald-500" : "text-rose-500"}`;
+  }
+}
+
+function populateExpirationFilter(contracts) {
+  const expSelect = document.getElementById("opt-exp-filter");
+  if (!expSelect) return;
+  const uniqueDates = Array.from(new Set((contracts || []).map((c) => c.expiration_date).filter(Boolean))).sort();
+  const prevVal = expSelect.value;
+
+  let html = `<option value="ALL">All Expirations (${uniqueDates.length})</option>`;
+  for (const dt of uniqueDates) {
+    html += `<option value="${dt}">${fmtYahooExpDate(dt)}</option>`;
+  }
+  expSelect.innerHTML = html;
+
+  if (uniqueDates.includes(prevVal)) {
+    expSelect.value = prevVal;
+  } else if (uniqueDates.length > 0) {
+    expSelect.value = uniqueDates[0];
+  } else {
+    expSelect.value = "ALL";
+  }
+}
+
 window.filterOptionsType = (type) => {
   optionsTypeFilter = type;
+  const sel = document.getElementById("opt-type-filter");
+  if (sel && sel.value !== type) sel.value = type;
   renderOptionsChain();
 };
 
-function renderOptionsChain() {
+function renderYahooOptionsTableSection(title, typeLabel, rows, spotPrice) {
+  const tableRowsHtml = rows
+    .map((c) => {
+      const isCall = c.type === "call";
+      const strike = Number(c.strike_price || 0);
+      const isItm = isCall ? strike <= spotPrice : strike >= spotPrice;
+      const lastPrice = Number(c.price || 0);
+      const bid = Number(c.bid ?? lastPrice * 0.98);
+      const ask = Number(c.ask ?? lastPrice * 1.02);
+      const chg = Number(c.change ?? 0);
+      const chgPct = Number(c.change_pct ?? 0);
+      const vol = Number(c.volume || 0);
+      const oi = Number(c.open_interest || 0);
+      const ivPct = c.iv !== undefined && c.iv !== null ? Number(c.iv) : 38.5;
+
+      const chgColor =
+        chg > 0
+          ? "text-emerald-500 dark:text-emerald-400"
+          : chg < 0
+          ? "text-rose-500 dark:text-rose-400"
+          : "text-slate-600 dark:text-slate-300";
+
+      const rowBg = isItm
+        ? "bg-sky-50/90 dark:bg-[#0B3B5B]/65 border-l-4 border-l-[#0EA5E9] hover:bg-sky-100/80 dark:hover:bg-[#0E4870]/85"
+        : "bg-white dark:bg-[#0F141C] border-l-4 border-l-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60";
+
+      const strikeFormatted = Number.isInteger(strike) ? strike.toString() : strike.toFixed(2).replace(/0$/, "");
+
+      return `
+      <tr
+        onclick="window.openOptionContractModal('${c.symbol}')"
+        class="${rowBg} border-b border-slate-200/70 dark:border-slate-800/80 transition-colors cursor-pointer text-xs"
+      >
+        <td class="py-2.5 px-3 font-bold text-sky-700 dark:text-white whitespace-nowrap font-mono">${c.symbol}</td>
+        <td class="py-2.5 px-3 text-slate-500 dark:text-slate-300 whitespace-nowrap">${fmtYahooLastTradeDate(c.last_trade_date)}</td>
+        <td class="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap">${strikeFormatted}</td>
+        <td class="py-2.5 px-3 text-right font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">${lastPrice.toFixed(2)}</td>
+        <td class="py-2.5 px-3 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap">${bid.toFixed(2)}</td>
+        <td class="py-2.5 px-3 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap">${ask.toFixed(2)}</td>
+        <td class="py-2.5 px-3 text-right font-medium ${chgColor} whitespace-nowrap">${chg > 0 ? "+" : ""}${chg.toFixed(2)}</td>
+        <td class="py-2.5 px-3 text-right font-medium ${chgColor} whitespace-nowrap">${chgPct > 0 ? "+" : ""}${chgPct.toFixed(2)}%</td>
+        <td class="py-2.5 px-3 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap">${vol > 0 ? vol.toLocaleString("en-US") : "-"}</td>
+        <td class="py-2.5 px-3 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap">${oi.toLocaleString("en-US")}</td>
+        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-200 whitespace-nowrap">${ivPct.toFixed(2)}%</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+  <div class="space-y-2.5">
+    <div class="flex items-end justify-between">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">${title}</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Haz clic en cualquier contrato para ver la explicación sencilla y preparar tu orden en Alpaca.</p>
+      </div>
+      <div class="border-l-4 border-[#0EA5E9] bg-sky-100 dark:bg-[#0C3B5E] text-sky-900 dark:text-white px-3 py-1 text-xs font-semibold">
+        In The Money
+      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F141C]">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-medium text-slate-500 dark:text-slate-300 bg-slate-50/70 dark:bg-[#131822]">
+            <th class="py-2.5 px-3 whitespace-nowrap">Contract Name</th>
+            <th class="py-2.5 px-3 whitespace-nowrap">Last Trade Date (EST)</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Strike</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Last Price</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Bid</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Ask</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Change</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">% Change</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Volume</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Open Interest</th>
+            <th class="py-2.5 px-3 text-right whitespace-nowrap">Implied Volatility</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            rows.length > 0
+              ? tableRowsHtml
+              : `<tr><td colspan="11" class="py-8 text-center text-xs text-slate-400">No hay contratos ${typeLabel} para este filtro.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderYahooStraddleTable(calls, puts, spotPrice) {
+  const strikeMap = new Map();
+  for (const c of calls) {
+    const k = Number(c.strike_price);
+    if (!strikeMap.has(k)) strikeMap.set(k, {});
+    strikeMap.get(k).call = c;
+  }
+  for (const p of puts) {
+    const k = Number(p.strike_price);
+    if (!strikeMap.has(k)) strikeMap.set(k, {});
+    strikeMap.get(k).put = p;
+  }
+  const sortedStrikes = Array.from(strikeMap.keys()).sort((a, b) => a - b);
+
+  const rowsHtml = sortedStrikes
+    .map((strike) => {
+      const pair = strikeMap.get(strike) || {};
+      const c = pair.call;
+      const p = pair.put;
+      const callItm = strike <= spotPrice;
+      const putItm = strike >= spotPrice;
+      const callBg = callItm ? "bg-sky-50/90 dark:bg-[#0B3B5B]/60" : "";
+      const putBg = putItm ? "bg-sky-50/90 dark:bg-[#0B3B5B]/60" : "";
+
+      return `
+      <tr class="border-b border-slate-200/70 dark:border-slate-800/80 text-xs">
+        <td onclick="${c ? `window.openOptionContractModal('${c.symbol}')` : ""}" class="py-2.5 px-3 font-mono font-semibold text-sky-700 dark:text-white cursor-pointer ${callBg}">${c ? c.symbol : "-"}</td>
+        <td onclick="${c ? `window.openOptionContractModal('${c.symbol}')` : ""}" class="py-2.5 px-3 text-right font-medium cursor-pointer ${callBg}">${c ? Number(c.price).toFixed(2) : "-"}</td>
+        <td onclick="${c ? `window.openOptionContractModal('${c.symbol}')` : ""}" class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-300 cursor-pointer ${callBg}">${c ? Number(c.bid ?? c.price).toFixed(2) : "-"}</td>
+        <td onclick="${c ? `window.openOptionContractModal('${c.symbol}')` : ""}" class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-300 cursor-pointer ${callBg}">${c ? Number(c.ask ?? c.price).toFixed(2) : "-"}</td>
+        <td onclick="${c ? `window.openOptionContractModal('${c.symbol}')` : ""}" class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-300 cursor-pointer ${callBg}">${c && c.volume ? c.volume : "-"}</td>
+        <td class="py-2.5 px-4 text-center font-bold bg-slate-100 dark:bg-slate-800/90 text-slate-900 dark:text-white">${strike}</td>
+        <td onclick="${p ? `window.openOptionContractModal('${p.symbol}')` : ""}" class="py-2.5 px-3 text-right font-medium cursor-pointer ${putBg}">${p ? Number(p.price).toFixed(2) : "-"}</td>
+        <td onclick="${p ? `window.openOptionContractModal('${p.symbol}')` : ""}" class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-300 cursor-pointer ${putBg}">${p ? Number(p.bid ?? p.price).toFixed(2) : "-"}</td>
+        <td onclick="${p ? `window.openOptionContractModal('${p.symbol}')` : ""}" class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-300 cursor-pointer ${putBg}">${p ? Number(p.ask ?? p.price).toFixed(2) : "-"}</td>
+        <td onclick="${p ? `window.openOptionContractModal('${p.symbol}')` : ""}" class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-300 cursor-pointer ${putBg}">${p && p.volume ? p.volume : "-"}</td>
+        <td onclick="${p ? `window.openOptionContractModal('${p.symbol}')` : ""}" class="py-2.5 px-3 font-mono font-semibold text-sky-700 dark:text-white cursor-pointer ${putBg}">${p ? p.symbol : "-"}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+  <div class="space-y-2.5">
+    <div class="flex items-end justify-between">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white">Straddle View (Calls | Strike | Puts)</h2>
+      <div class="border-l-4 border-[#0EA5E9] bg-sky-100 dark:bg-[#0C3B5E] text-sky-900 dark:text-white px-3 py-1 text-xs font-semibold">
+        In The Money
+      </div>
+    </div>
+    <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F141C]">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-medium text-slate-500 dark:text-slate-300 bg-slate-50/70 dark:bg-[#131822]">
+            <th class="py-2.5 px-3">Call Contract</th>
+            <th class="py-2.5 px-3 text-right">Last</th>
+            <th class="py-2.5 px-3 text-right">Bid</th>
+            <th class="py-2.5 px-3 text-right">Ask</th>
+            <th class="py-2.5 px-3 text-right">Vol</th>
+            <th class="py-2.5 px-4 text-center bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold">Strike</th>
+            <th class="py-2.5 px-3 text-right">Last</th>
+            <th class="py-2.5 px-3 text-right">Bid</th>
+            <th class="py-2.5 px-3 text-right">Ask</th>
+            <th class="py-2.5 px-3 text-right">Vol</th>
+            <th class="py-2.5 px-3">Put Contract</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+window.renderOptionsChain = function renderOptionsChain() {
   const listEl = document.getElementById("options-chain-list");
   if (!listEl) return;
-  let contracts = optionsChainData.contracts || [];
-  if (optionsTypeFilter !== "ALL") {
-    contracts = contracts.filter((c) => c.type === optionsTypeFilter);
+
+  const spot = Number(optionsChainData.underlyingPrice || 0);
+  const expFilter = document.getElementById("opt-exp-filter")?.value || "ALL";
+  const strikeFilter = document.getElementById("opt-strike-filter")?.value || "ALL";
+  const viewFilter = document.getElementById("opt-view-filter")?.value || "LIST";
+  const typeFilter = document.getElementById("opt-type-filter")?.value || optionsTypeFilter || "ALL";
+
+  let contracts = [...(optionsChainData.contracts || [])];
+
+  if (expFilter !== "ALL") {
+    contracts = contracts.filter((c) => c.expiration_date === expFilter);
   }
 
+  if (strikeFilter === "ITM") {
+    contracts = contracts.filter((c) =>
+      c.type === "call" ? Number(c.strike_price) <= spot : Number(c.strike_price) >= spot
+    );
+  } else if (strikeFilter === "OTM") {
+    contracts = contracts.filter((c) =>
+      c.type === "call" ? Number(c.strike_price) > spot : Number(c.strike_price) < spot
+    );
+  } else if (strikeFilter === "NEAR" && spot > 0) {
+    contracts = contracts.filter((c) => Math.abs(Number(c.strike_price) - spot) / spot <= 0.15);
+  }
+
+  // Sort by strike price ascending (or by volume / OI if subtab selected)
+  if (optionsSubTab === "volume") {
+    contracts.sort((a, b) => Number(b.volume || 0) - Number(a.volume || 0));
+  } else if (optionsSubTab === "oi") {
+    contracts.sort((a, b) => Number(b.open_interest || 0) - Number(a.open_interest || 0));
+  } else {
+    contracts.sort((a, b) => Number(a.strike_price) - Number(b.strike_price));
+  }
+
+  const calls = contracts.filter((c) => c.type === "call");
+  const puts = contracts.filter((c) => c.type === "put");
+
   if (contracts.length === 0) {
-    listEl.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No hay contratos para este filtro.</div>`;
+    listEl.innerHTML = `<div class="p-8 rounded-lg border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">No hay contratos disponibles para esta combinación de filtros.</div>`;
     return;
   }
 
-  listEl.innerHTML = contracts
-    .map((c) => {
-      const isCall = c.type === "call";
-      const totalContractUSD = (Number(c.price || 1.5) * 100).toFixed(0);
-      const simpleExp = isCall
-        ? `En simple (Call): Costo total de US $${totalContractUSD} por 1 contrato (100 acciones). Ganas si ${optionsChainData.underlying} sube sobre $${(c.strike_price + Number(c.price)).toFixed(2)} antes del ${c.expiration_date}.`
-        : `En simple (Put): Costo total de US $${totalContractUSD} como cobertura bajista. Ganas si ${optionsChainData.underlying} baja de $${(c.strike_price - Number(c.price)).toFixed(2)} antes del ${c.expiration_date}.`;
+  if (viewFilter === "STRADDLE" && typeFilter === "ALL") {
+    listEl.innerHTML = renderYahooStraddleTable(calls, puts, spot);
+    return;
+  }
 
-      return `
-      <div class="bg-neutral-50 dark:bg-slate-900 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="space-y-1 flex-1">
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${isCall ? "Call" : "Put"} · Strike $${c.strike_price}</span>
-            <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500">Vence ${c.expiration_date}</span>
-          </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">${simpleExp}</p>
-        </div>
+  let html = "";
+  if (typeFilter === "ALL" || typeFilter === "call") {
+    html += renderYahooOptionsTableSection("Calls", "Calls", calls, spot);
+  }
+  if (typeFilter === "ALL" || typeFilter === "put") {
+    html += renderYahooOptionsTableSection("Puts", "Puts", puts, spot);
+  }
+  listEl.innerHTML = html;
+};
 
-        <div class="flex items-center justify-between sm:justify-end gap-4">
-          <div class="text-right">
-            <p class="text-xs text-slate-500">Prima / Total x100</p>
-            <p class="text-sm font-bold text-slate-900 dark:text-slate-100">US $${c.price} <span class="font-normal text-xs text-slate-500">(US $${totalContractUSD})</span></p>
-          </div>
-          <button
-            onclick="window.proposeOptionTrade('${c.symbol}', ${c.price})"
-            class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-zesty-purple-500 text-xs font-medium whitespace-nowrap"
-          >
-            Seleccionar
-          </button>
-        </div>
-      </div>`;
-    })
-    .join("");
-}
+window.openOptionContractModal = (contractSymbol) => {
+  const c = (optionsChainData.contracts || []).find((it) => it.symbol === contractSymbol);
+  if (!c) return;
 
-window.proposeOptionTrade = async (optionSymbol, price) => {
+  const isCall = c.type === "call";
+  const strike = Number(c.strike_price || 0);
+  const lastPrice = Number(c.price || 0);
+  const bid = Number(c.bid ?? lastPrice * 0.98);
+  const ask = Number(c.ask ?? lastPrice * 1.02);
+  const iv = Number(c.iv ?? 38.5);
+  const totalUSD = (lastPrice * 100).toFixed(0);
+  const breakEven = isCall ? (strike + lastPrice).toFixed(2) : (strike - lastPrice).toFixed(2);
+
+  const badgeEl = document.getElementById("opt-modal-type-badge");
+  if (badgeEl) {
+    badgeEl.textContent = isCall ? "CALL" : "PUT";
+    badgeEl.className = isCall
+      ? "text-[11px] font-bold px-2.5 py-0.5 rounded bg-sky-500/20 text-sky-600 dark:text-sky-400 uppercase"
+      : "text-[11px] font-bold px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-600 dark:text-purple-400 uppercase";
+  }
+
+  document.getElementById("opt-modal-symbol").textContent = c.symbol;
+  document.getElementById("opt-modal-subtitle").textContent = `${optionsChainData.underlying} · Strike $${strike} · Vence ${fmtYahooExpDate(c.expiration_date)}`;
+  document.getElementById("opt-modal-last").textContent = `$${lastPrice.toFixed(2)}`;
+  document.getElementById("opt-modal-bidask").textContent = `$${bid.toFixed(2)} / $${ask.toFixed(2)}`;
+  document.getElementById("opt-modal-iv").textContent = `${iv.toFixed(2)}%`;
+  document.getElementById("opt-modal-total").textContent = `US $${totalUSD}`;
+
+  const simpleText = isCall
+    ? `Cada contrato equivale a 100 acciones de ${optionsChainData.underlying}. Pagas una prima de US $${lastPrice.toFixed(2)} por acción (US $${totalUSD} en total). Tu pérdida máxima está limitada a esos US $${totalUSD}, y obtienes ganancias si ${optionsChainData.underlying} sube por encima de US $${breakEven} antes del ${fmtYahooExpDate(c.expiration_date)}.`
+    : `Cada contrato equivale a 100 acciones de ${optionsChainData.underlying}. Pagas una prima de US $${lastPrice.toFixed(2)} por acción (US $${totalUSD} en total) como cobertura o apuesta bajista. Ganarás si ${optionsChainData.underlying} cae por debajo de US $${breakEven} antes del ${fmtYahooExpDate(c.expiration_date)}.`;
+
+  document.getElementById("opt-modal-simple").textContent = simpleText;
+
+  const qtyInput = document.getElementById("opt-modal-qty");
+  if (qtyInput) qtyInput.value = "1";
+
+  const confirmBtn = document.getElementById("opt-modal-confirm-btn");
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      const qty = Math.max(1, Number(document.getElementById("opt-modal-qty")?.value || 1));
+      window.closeOptionContractModal();
+      window.proposeOptionTrade(c.symbol, lastPrice, qty);
+    };
+  }
+
+  document.getElementById("option-contract-modal")?.classList.remove("hidden");
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeOptionContractModal = () => {
+  document.getElementById("option-contract-modal")?.classList.add("hidden");
+};
+
+window.proposeOptionTrade = async (optionSymbol, price, qty = 1) => {
   try {
-    showToast(`Preparando orden para ${optionSymbol}...`);
+    showToast(`Preparando orden para ${optionSymbol} (${qty} contrato${qty > 1 ? "s" : ""})...`);
     await callEngine("create_proposal", {
       symbol: optionSymbol,
       side: "buy",
       price,
-      qty: 1,
+      qty,
       is_option: true,
-      reason: `Contrato de opción (${optionSymbol})`,
+      reason: `Contrato de opción (${optionSymbol}) x${qty}`,
     });
     await loadDatabaseData();
     window.switchSection("signals");
