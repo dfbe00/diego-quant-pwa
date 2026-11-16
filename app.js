@@ -10,7 +10,6 @@ const USD_TO_CLP = 978;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// State
 let currentSection = "dashboard";
 let displayCurrency = "USD";
 let watchlistData = [];
@@ -55,7 +54,6 @@ let portfolioState = {
   history: null,
 };
 
-// Currency Formatter
 function fmtMoney(amountUSD, compact = false) {
   const num = Number(amountUSD || 0);
   if (displayCurrency === "CLP") {
@@ -71,22 +69,19 @@ function fmtMoney(amountUSD, compact = false) {
   );
 }
 
-function showToast(msg, type = "purple") {
+function showToast(msg, type = "neutral") {
   const banner = document.getElementById("toast-banner");
   if (!banner) return;
   const styles =
     type === "rose"
-      ? "bg-rose-500/15 border-rose-500/40 text-rose-400"
-      : type === "emerald"
-      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-      : "bg-zesty-purple-500/15 border-zesty-purple-500/40 text-zesty-purple-400";
-  banner.className = `mx-4 mt-4 p-3.5 rounded-xl text-xs font-semibold border flex items-center justify-between shadow-lg ${styles}`;
-  banner.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.classList.add('hidden')" class="ml-3 opacity-70 hover:opacity-100">✕</button>`;
+      ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 text-zesty-red-500"
+      : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200";
+  banner.className = `mx-4 mt-4 p-3 rounded-lg text-xs font-medium border flex items-center justify-between ${styles}`;
+  banner.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.classList.add('hidden')" class="ml-3 text-slate-400 hover:text-slate-600">✕</button>`;
   banner.classList.remove("hidden");
-  setTimeout(() => banner.classList.add("hidden"), 6000);
+  setTimeout(() => banner.classList.add("hidden"), 5000);
 }
 
-// Push Notifications Helper
 async function sendLocalPushNotification(title, body, tab = "signals") {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
@@ -96,60 +91,45 @@ async function sendLocalPushNotification(title, body, tab = "signals") {
         body,
         icon: "./icon.svg",
         badge: "./icon.svg",
-        vibrate: [200, 100, 200],
         data: { tab },
       });
       return;
     }
-  } catch {
-    // Fallback to standard Notification
-  }
+  } catch {}
   new Notification(title, { body, icon: "./icon.svg" });
 }
 
 window.requestPushNotificationPermission = async () => {
   if (!("Notification" in window)) {
-    showToast("Tu navegador actual no soporta notificaciones Web Push.", "rose");
+    showToast("Tu navegador no soporta notificaciones push.", "rose");
     return;
   }
   const perm = await Notification.requestPermission();
   updatePushButtonUI();
   if (perm === "granted") {
-    showToast("🔔 ¡Notificaciones Push activadas! Recibirás alertas de compra/venta.", "emerald");
-    await sendLocalPushNotification(
-      "Zesty Quant AI · Push Activo",
-      "Te avisaremos aquí y en @Telegram cada vez que el Triple Canal 20D + RSI detecte una señal."
-    );
-  } else {
-    showToast("Permiso de notificaciones no concedido.", "rose");
+    showToast("Notificaciones activadas.");
+    await sendLocalPushNotification("Zesty", "Recibirás avisos cuando tengas una orden por confirmar.");
   }
 };
 
 function updatePushButtonUI() {
   const lbl = document.getElementById("push-perm-label");
   if (!lbl || !("Notification" in window)) return;
-  if (Notification.permission === "granted") {
-    lbl.textContent = "Push Activo";
-  } else {
-    lbl.textContent = "Activar Push";
-  }
+  lbl.textContent = Notification.permission === "granted" ? "Notificaciones activas" : "Notificaciones";
 }
 
-// Desktop App Installer / Downloader
 window.installOrDownloadDesktopApp = async () => {
   if (deferredInstallPrompt) {
     deferredInstallPrompt.prompt();
     const { outcome } = await deferredInstallPrompt.userChoice;
     if (outcome === "accepted") {
       deferredInstallPrompt = null;
-      showToast("✅ App instalada en tu computador.", "emerald");
       return;
     }
   }
-  // Generate a native Windows Desktop Launcher (.bat) so the user can download and open it anytime
   const batContent = [
     "@echo off",
-    "title Zesty Quant AI - Desktop Launcher",
+    "title Zesty Quant",
     'if exist "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" (',
     `  start "" "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" --app=${APP_PUBLIC_URL}`,
     "  exit",
@@ -164,14 +144,13 @@ window.installOrDownloadDesktopApp = async () => {
   const blob = new Blob([batContent], { type: "application/bat" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "Zesty_Quant_AI_Escritorio.bat";
+  a.download = "Zesty_Escritorio.bat";
   document.body.appendChild(a);
   a.click();
   a.remove();
-  showToast("💻 Se descargó el ejecutable 'Zesty_Quant_AI_Escritorio.bat' (y ya tienes el acceso directo en tu Escritorio).", "emerald");
+  showToast("Se descargó el acceso directo para computador.");
 };
 
-// Call Supabase Edge Function
 async function callEngine(action, payload = {}) {
   const {
     data: { session },
@@ -193,7 +172,6 @@ async function callEngine(action, payload = {}) {
   return data;
 }
 
-// Section Navigation
 window.switchSection = (secName) => {
   currentSection = secName;
   const allSecs = ["dashboard", "explore", "options", "radar", "signals", "chat", "news", "orders", "leverage", "settings"];
@@ -202,61 +180,42 @@ window.switchSection = (secName) => {
     if (el) el.classList.toggle("hidden", s !== secName);
   });
 
-  // Update desktop sidebar active styles (Exact Zesty border-l-5 border-zesty-purple-500)
   document.querySelectorAll(".sidebar-link").forEach((link) => {
     const active = link.getAttribute("data-nav") === secName;
+    if (link.id === "sidebar-news-item" && !uiConfig.show_news_section) return;
     link.className = active
-      ? "sidebar-link flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors border-l-5 border-zesty-purple-500 bg-zesty-purple-50 dark:bg-zesty-purple-950/30 text-zesty-purple-700 dark:text-purple-200"
-      : "sidebar-link flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60";
+      ? "sidebar-link flex items-center justify-between px-4 py-2.5 text-sm transition-colors border-l-5 border-zesty-purple-500 bg-zesty-purple-50 dark:bg-zesty-purple-950/20 text-slate-800 dark:text-slate-200 font-medium"
+      : "sidebar-link flex items-center justify-between px-4 py-2.5 text-sm transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60";
   });
 
-  // Update mobile bottom nav
   document.querySelectorAll(".mob-nav-btn").forEach((btn) => {
     const active = btn.getAttribute("data-nav") === secName;
     btn.classList.toggle("text-zesty-purple-500", active);
     btn.classList.toggle("text-slate-400", !active);
   });
 
-  // Close mobile sidebar drawer if open
   document.getElementById("app-sidebar")?.classList.add("hidden");
   document.getElementById("sidebar-backdrop")?.classList.add("hidden");
 
-  if (secName === "explore" && marketCatalog.length === 0) {
-    loadExploreCatalog();
-  }
-  if (secName === "options" && optionsChainData.contracts.length === 0) {
-    window.loadOptionsChain("NVDA");
-  }
-  if (secName === "news") {
-    window.loadMarketNews();
-  }
+  if (secName === "explore" && marketCatalog.length === 0) loadExploreCatalog();
+  if (secName === "options" && optionsChainData.contracts.length === 0) window.loadOptionsChain("NVDA");
+  if (secName === "news") window.loadMarketNews();
   if (secName === "chat") {
     const box = document.getElementById("chat-messages-box");
     if (box) box.scrollTop = box.scrollHeight;
   }
 };
 
-// Apply Dynamic UI Config (Controlled by Chatbot or Settings)
 function applyDynamicUiConfig() {
   if (!uiConfig) return;
 
-  // Toggle News in Sidebar
   const newsLi = document.getElementById("sidebar-news-item");
-  if (newsLi) {
-    newsLi.classList.toggle("hidden", !uiConfig.show_news_section);
-  }
+  if (newsLi) newsLi.classList.toggle("hidden", !uiConfig.show_news_section);
 
-  // Toggle Dashboard Cards
-  const chartCard = document.getElementById("card-portfolio-chart");
-  if (chartCard) chartCard.classList.toggle("hidden", uiConfig.show_portfolio_chart === false);
+  document.getElementById("card-portfolio-chart")?.classList.toggle("hidden", uiConfig.show_portfolio_chart === false);
+  document.getElementById("card-buying-power")?.classList.toggle("hidden", uiConfig.show_buying_power === false);
+  document.getElementById("card-positions")?.classList.toggle("hidden", uiConfig.show_positions === false);
 
-  const bpCard = document.getElementById("card-buying-power");
-  if (bpCard) bpCard.classList.toggle("hidden", uiConfig.show_buying_power === false);
-
-  const posCard = document.getElementById("card-positions");
-  if (posCard) posCard.classList.toggle("hidden", uiConfig.show_positions === false);
-
-  // Render Custom Sections created from Chat
   const customContainer = document.getElementById("dashboard-custom-sections");
   const sidebarCustomWrap = document.getElementById("sidebar-custom-wrapper");
   const sidebarCustomList = document.getElementById("sidebar-custom-list");
@@ -271,11 +230,9 @@ function applyDynamicUiConfig() {
       sidebarCustomList.innerHTML = customSections
         .map(
           (c) => `
-        <li>
-          <a href="#dashboard" onclick="window.switchSection('dashboard'); return false;" class="flex items-center px-4 py-2 text-xs font-medium text-zesty-purple-500 hover:bg-zesty-purple-500/10">
-            <span>✨ ${c.title}</span>
-          </a>
-        </li>`
+          <a href="#dashboard" onclick="window.switchSection('dashboard'); return false;" class="flex items-center px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+            <span class="ml-3">${c.title}</span>
+          </a>`
         )
         .join("");
     }
@@ -283,15 +240,13 @@ function applyDynamicUiConfig() {
     let html = "";
     if (uiConfig.show_news_section) {
       html += `
-      <div class="p-4 sm:p-6 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between">
+      <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 bg-zesty-purple-50 dark:bg-slate-900/20 flex items-center justify-between">
         <div>
-          <div class="text-sm font-bold text-emerald-500 flex items-center gap-2">
-            <span>📰 Sección de Noticias en Vivo Activa</span>
-          </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Agregada desde el Asistente IA. Consulta los titulares en tiempo real de Alpaca.</p>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Noticias del mercado</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sección habilitada desde el asistente</p>
         </div>
-        <button onclick="window.switchSection('news')" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">
-          Abrir Noticias
+        <button onclick="window.switchSection('news')" class="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2 text-xs font-medium">
+          Ver noticias
         </button>
       </div>`;
     }
@@ -299,22 +254,18 @@ function applyDynamicUiConfig() {
     html += customSections
       .map(
         (c) => `
-      <div class="p-4 sm:p-6 rounded-xl border border-zesty-purple-500/40 bg-zesty-purple-50/70 dark:bg-slate-900/60 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-zesty-purple-500/20 text-zesty-purple-400">Módulo Creado por IA</span>
-            <h3 class="text-base font-bold mt-1">${c.title}</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">${c.subtitle || ""}</p>
-          </div>
+      <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-3">
+        <div>
+          <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">${c.title}</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">${c.subtitle || ""}</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           ${(c.items || [])
             .map(
               (it) => `
-            <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <div class="text-xs text-slate-400">${it.label || ""}</div>
-              <div class="text-sm font-bold mt-0.5">${it.value || ""}</div>
-              ${it.badge ? `<span class="text-[10px] text-zesty-purple-400">${it.badge}</span>` : ""}
+            <div class="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <div class="text-xs text-slate-500">${it.label || ""}</div>
+              <div class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">${it.value || ""}</div>
             </div>`
             )
             .join("")}
@@ -327,7 +278,6 @@ function applyDynamicUiConfig() {
   }
 }
 
-// Render Portfolio & Zesty SVG Chart
 function renderPortfolio() {
   const acc = portfolioState.account || {};
   const equity = Number(acc.equity || 100000.69);
@@ -336,36 +286,32 @@ function renderPortfolio() {
   const dayPct = lastEquity > 0 ? (dayDiff / lastEquity) * 100 : 0;
 
   document.getElementById("portfolio-currency-label").textContent =
-    displayCurrency === "CLP"
-      ? `Saldo total en 🇨🇱 Pesos Chilenos (TC ~$${USD_TO_CLP})`
-      : "Saldo total en 🇺🇸 USD (Cuenta Alpaca PA3XXQ6PL)";
+    displayCurrency === "CLP" ? "Saldo total en 🇨🇱 CLP" : "Saldo total en 🇺🇸 USD";
 
   document.getElementById("portfolio-equity").textContent = fmtMoney(equity);
   const dayEl = document.getElementById("portfolio-day-change");
   const isUp = dayDiff >= 0;
-  dayEl.className = `flex items-center text-sm font-semibold mt-1 ${
-    isUp ? "text-zesty-green-500" : "text-zesty-red-500"
+  dayEl.className = `flex items-center text-sm mt-1 ${
+    isUp ? "text-zesty-green-500" : "text-zesty-red-500 dark:text-zesty-red-400"
   }`;
-  dayEl.innerHTML = `${isUp ? "▲ +" : "▼ "}${fmtMoney(dayDiff)} (${isUp ? "+" : ""}${dayPct.toFixed(
+  dayEl.innerHTML = `${isUp ? "+" : ""}${fmtMoney(dayDiff)} (${isUp ? "+" : ""}${dayPct.toFixed(
     2
-  )}%) <span class="pl-1.5 text-slate-500 dark:text-slate-400 font-normal">Hoy</span>`;
+  )}%) <span class="pl-1 text-slate-500 dark:text-slate-400">Hoy</span>`;
 
   document.getElementById("portfolio-cash").textContent = fmtMoney(acc.cash);
   document.getElementById("portfolio-bp").textContent = fmtMoney(acc.buying_power);
-  document.getElementById("portfolio-opt-bp").textContent = fmtMoney(acc.options_buying_power || acc.cash);
   document.getElementById("portfolio-max-pos").textContent = fmtMoney(equity * 0.1);
 
-  // Render SVG Area Chart (#BB91FA)
   const hist = portfolioState.history;
   let pts = hist?.equity?.filter((v) => v && v > 0) || [];
   if (pts.length < 5) {
-    pts = [equity * 0.985, equity * 0.991, equity * 0.989, equity * 0.996, equity * 0.998, equity];
+    pts = [equity * 0.992, equity * 0.995, equity * 0.994, equity * 0.998, equity * 0.999, equity];
   }
   const minV = Math.min(...pts) * 0.998;
   const maxV = Math.max(...pts) * 1.002;
   const range = Math.max(1, maxV - minV);
-  const width = 960;
-  const height = 240;
+  const width = 996;
+  const height = 250;
 
   const coords = pts.map((v, idx) => {
     const x = (idx / Math.max(1, pts.length - 1)) * width;
@@ -378,66 +324,47 @@ function renderPortfolio() {
   document.getElementById("chart-line-path")?.setAttribute("d", lineD);
   document.getElementById("chart-area-path")?.setAttribute("d", areaD);
 
-  // Positions
   const positions = portfolioState.positions || [];
-  document.getElementById("positions-count").textContent = `${positions.length} activa(s)`;
+  document.getElementById("positions-count").textContent = `${positions.length} activas`;
   const posContainer = document.getElementById("positions-list");
 
   if (positions.length === 0) {
     posContainer.innerHTML = `
-      <div class="flex flex-col items-center py-10 text-center">
+      <div class="flex flex-col items-center py-10">
         <div class="mb-3 text-slate-400 dark:text-slate-500">
-          <i data-lucide="briefcase" class="w-10 h-10 mx-auto"></i>
+          <i data-lucide="briefcase" class="w-10 h-10"></i>
         </div>
-        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No tienes posiciones abiertas aún</p>
-        <p class="mt-1 text-xs text-slate-400 max-w-md">
-          Tienes señales listas para confirmar en la pestaña <b>Confirmaciones</b> o puedes explorar Acciones, Opciones, Renta Fija y ETFs.
-        </p>
-        <div class="flex gap-2 mt-4">
-          <button onclick="window.switchSection('signals')" class="rounded-xl bg-zesty-purple-500 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-zesty-purple-400">
-            Ver Señales para Confirmar
-          </button>
-          <button onclick="window.switchSection('explore')" class="rounded-xl border border-zesty-purple-500/40 px-4 py-2 text-xs font-bold text-zesty-purple-400">
-            Explorar Mercado
-          </button>
-        </div>
+        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No tienes posiciones aún</p>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Explora activos o confirma tus señales pendientes para comenzar a invertir</p>
+        <button onclick="window.switchSection('explore')" class="mt-4 inline-flex items-center justify-center rounded-xl bg-zesty-purple-500 px-4 py-2 text-xs text-white shadow-xs hover:bg-zesty-purple-400">
+          Explorar activos
+        </button>
       </div>`;
     if (window.lucide) window.lucide.createIcons();
   } else {
     posContainer.innerHTML = `
-      <div class="space-y-2.5">
+      <div class="flex flex-col gap-1.5 mt-2">
         ${positions
           .map((p) => {
             const pl = Number(p.unrealized_pl || 0);
             const plPct = Number(p.unrealized_plpc || 0) * 100;
             const mktVal = Number(p.market_value || 0);
-            const stopPrice = (Number(p.avg_entry_price || p.current_price) * 0.93).toFixed(2);
             return `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full border-2 border-zesty-purple-500 bg-zesty-purple-500/10 flex items-center justify-center font-extrabold text-xs text-zesty-purple-500">
-                  ${p.symbol.slice(0, 4)}
-                </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-sm">${p.symbol}</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">${p.qty} unid.</span>
-                  </div>
-                  <div class="text-xs text-slate-400 mt-0.5">
-                    Entrada $${Number(p.avg_entry_price).toFixed(2)} · Actual $${Number(p.current_price).toFixed(2)} · Stop-Loss (-7%): $${stopPrice}
-                  </div>
-                </div>
+            <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200/80 dark:border-slate-800">
+              <div>
+                <p class="font-bold text-sm text-slate-900 dark:text-slate-100">${p.symbol}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${p.qty} unid. · Entrada $${Number(p.avg_entry_price).toFixed(2)}</p>
               </div>
-              <div class="flex items-center justify-between sm:justify-end gap-4">
+              <div class="flex items-center gap-4">
                 <div class="text-right">
-                  <div class="font-bold text-sm">${fmtMoney(mktVal)}</div>
-                  <div class="text-xs font-bold ${pl >= 0 ? "text-zesty-green-500" : "text-zesty-red-500"}">
-                    ${pl >= 0 ? "+" : ""}${fmtMoney(pl)} (${plPct.toFixed(2)}%)
-                  </div>
+                  <p class="text-sm font-medium text-slate-900 dark:text-slate-100">${fmtMoney(mktVal)}</p>
+                  <p class="text-xs ${pl >= 0 ? "text-zesty-green-500" : "text-zesty-red-500"}">
+                    ${pl >= 0 ? "+" : ""}${plPct.toFixed(2)}%
+                  </p>
                 </div>
                 <button
                   onclick="window.proposeQuickTrade('${p.symbol}', 'sell', ${p.qty})"
-                  class="px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs font-bold"
+                  class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300"
                 >
                   Vender
                 </button>
@@ -448,28 +375,22 @@ function renderPortfolio() {
       </div>`;
   }
 
-  // Orders List
   const orders = portfolioState.orders || [];
   const ordContainer = document.getElementById("orders-list");
   if (ordContainer) {
     if (orders.length === 0) {
-      ordContainer.innerHTML = `<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">No hay órdenes recientes registradas en Alpaca.</div>`;
+      ordContainer.innerHTML = `<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">No hay órdenes recientes.</div>`;
     } else {
       ordContainer.innerHTML = orders
         .map((o) => {
           const isBuy = o.side === "buy";
           return `
-          <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-3">
-              <span class="px-2.5 py-1 rounded-lg font-extrabold uppercase ${
-                isBuy ? "bg-zesty-green-500/20 text-zesty-green-500" : "bg-zesty-red-500/20 text-zesty-red-500"
-              }">${isBuy ? "COMPRA" : "VENTA"}</span>
-              <div>
-                <div class="font-bold text-sm">${o.symbol} · ${o.qty || o.notional} unid. (${o.type.toUpperCase()})</div>
-                <div class="text-slate-400">${new Date(o.created_at).toLocaleString("es-CL")}</div>
-              </div>
+          <div class="p-4 rounded-lg bg-neutral-50 dark:bg-slate-900 flex items-center justify-between text-xs">
+            <div>
+              <p class="font-bold text-sm text-slate-900 dark:text-slate-100">${o.symbol} · ${isBuy ? "Compra" : "Venta"} (${o.qty || o.notional})</p>
+              <p class="text-slate-500 mt-0.5">${new Date(o.created_at).toLocaleString("es-CL")}</p>
             </div>
-            <span class="px-3 py-1 rounded-full font-bold bg-slate-100 dark:bg-slate-800 uppercase">${o.status}</span>
+            <span class="px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">${o.status}</span>
           </div>`;
         })
         .join("");
@@ -477,11 +398,11 @@ function renderPortfolio() {
   }
 }
 
-// Render Zesty Market Explorer ("Explorar")
+// Render Zesty Market Explorer (Exact Zesty Asset Row Structure)
 async function loadExploreCatalog(query = "") {
   const container = document.getElementById("explore-sections-container");
   if (container && marketCatalog.length === 0) {
-    container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Cargando cotizaciones en tiempo real desde Alpaca...</div>`;
+    container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">Cargando mercado desde Alpaca...</div>`;
   }
   try {
     const res = await callEngine("explore_market", { query });
@@ -489,70 +410,59 @@ async function loadExploreCatalog(query = "") {
     customSearchResults = res.customResults || [];
     renderExploreSections();
   } catch (err) {
-    showToast(`Error cargando mercado: ${err.message}`, "rose");
+    showToast(`Error: ${err.message}`, "rose");
   }
 }
 
 function renderAssetRowZesty(item) {
   const isUp = Number(item.changePct || 0) >= 0;
-  const borderColor = item.assetClass === "etf" || item.assetClass === "fixed_income" || item.assetClass === "leveraged"
-    ? "border-zesty-purple-500"
-    : "border-zesty-green-500";
+  const borderColor =
+    item.assetClass === "etf" || item.assetClass === "fixed_income" || item.assetClass === "leveraged"
+      ? "border-zesty-purple-500"
+      : "border-zesty-green-500";
   const cleanSym = item.symbol.replace("/USD", "");
   const logoUrl = `https://assets.parqet.com/logos/symbol/${encodeURIComponent(cleanSym)}?format=png`;
 
   return `
-  <div
-    onclick="window.openAssetModal('${item.symbol}')"
-    class="cursor-pointer flex justify-between items-center bg-neutral-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200/70 dark:border-slate-800/80 hover:bg-zesty-purple-50/60 dark:hover:bg-slate-800/80 transition-all duration-200"
+  <a
+    href="#asset/${item.symbol}"
+    onclick="window.openAssetModal('${item.symbol}'); return false;"
+    class="flex justify-between flex-1 items-center bg-neutral-50 dark:bg-slate-900 p-4 rounded-lg hover:bg-neutral-100/70 dark:hover:bg-slate-800/80 transition-all duration-200"
   >
-    <div class="flex items-center gap-3.5">
-      <div class="relative inline-block flex-shrink-0">
-        <img
-          src="${logoUrl}"
-          alt="${item.symbol}"
-          onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
-          class="w-9 h-9 rounded-full border-2 ${borderColor} object-cover bg-slate-800"
-        />
-        <div class="hidden w-9 h-9 rounded-full border-2 ${borderColor} bg-zesty-purple-500/20 flex items-center justify-center font-extrabold text-xs text-zesty-purple-400">
-          ${item.symbol.slice(0, 3)}
+    <div class="flex justify-between flex-1 items-center">
+      <div class="flex items-start gap-4">
+        <div class="relative inline-block flex-shrink-0 mt-0.5">
+          <img
+            src="${logoUrl}"
+            alt="${item.symbol}"
+            width="28"
+            height="28"
+            onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+            class="w-7 h-7 rounded-full border-2 ${borderColor} object-cover bg-white dark:bg-slate-800"
+          />
+          <div class="hidden w-7 h-7 rounded-full border-2 ${borderColor} bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-700 dark:text-slate-300">
+            ${item.symbol.slice(0, 3)}
+          </div>
         </div>
-        <span class="absolute -bottom-1 -right-1 text-[11px]" title="Mercado EEUU">🇺🇸</span>
-      </div>
-      <div>
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex flex-col gap-1.5">
           <p class="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">${item.name}</p>
-          ${
-            item.leverage
-              ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">${item.leverage}</span>`
-              : ""
-          }
-          ${
-            item.optionsEnabled
-              ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zesty-purple-500/15 text-zesty-purple-400">Opciones</span>`
-              : ""
-          }
-        </div>
-        <div class="flex items-center gap-2 mt-1">
-          <span class="text-xs text-slate-500 dark:text-slate-400 border px-2.5 py-0.5 rounded-full border-slate-200 dark:border-slate-700 font-semibold">
-            ${item.symbol}
-          </span>
-          <span class="text-xs text-slate-400">${item.subCategory}</span>
+          <div class="flex flex-row items-center gap-2">
+            <p class="text-xs text-slate-500 dark:text-slate-400 border w-fit px-2.5 py-0.5 rounded-full border-slate-200 dark:border-slate-800">${item.symbol}</p>
+            ${item.leverage ? `<span class="text-xs text-slate-400">${item.leverage}</span>` : ""}
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="flex items-center gap-3">
-      <div class="text-right">
-        <p class="text-[11px] text-slate-500 dark:text-slate-400">Precio actual</p>
-        <p class="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">${fmtMoney(item.price)}</p>
-        <p class="text-xs font-bold ${isUp ? "text-zesty-green-500" : "text-zesty-red-500"}">
+      <div class="flex flex-col gap-1 items-end ml-4">
+        <p class="text-xs text-slate-500 dark:text-slate-400">Precio actual</p>
+        <p class="text-sm sm:text-base text-slate-900 dark:text-slate-100 font-medium">${fmtMoney(item.price)}</p>
+        <p class="text-xs sm:text-sm ${isUp ? "text-zesty-green-500 dark:text-zesty-green-400" : "text-zesty-red-500 dark:text-zesty-red-400"}">
           ${isUp ? "+" : ""}${Number(item.changePct || 0).toFixed(2)}%
         </p>
       </div>
-      <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </div>
-  </div>`;
+    <i data-lucide="chevron-right" class="w-5 h-5 ml-3 text-slate-400"></i>
+  </a>`;
 }
 
 function renderExploreSections() {
@@ -578,11 +488,10 @@ function renderExploreSections() {
   }
 
   if (items.length === 0) {
-    container.innerHTML = `<div class="p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">No se encontraron activos con ese filtro. Presiona "Buscar Alpaca" para consultar cualquier ticker en directo.</div>`;
+    container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Presiona Enter en el buscador para consultar ese símbolo directamente en Alpaca.</div>`;
     return;
   }
 
-  // Group by subCategory just like Zesty ("Más transados", "Computación Cuántica", "ETFs S&P 500", etc.)
   const groups = {};
   for (const it of items) {
     const g = it.subCategory || it.category;
@@ -595,10 +504,10 @@ function renderExploreSections() {
       ([groupTitle, groupItems]) => `
       <section class="flex flex-col gap-3">
         <header class="flex items-center justify-between">
-          <h2 class="text-lg sm:text-xl font-bold">${groupTitle}</h2>
-          <span class="text-xs font-medium text-zesty-purple-500">${groupItems.length} instrumento(s)</span>
+          <h2 class="text-xl font-bold">${groupTitle}</h2>
+          <span class="text-xs text-zesty-purple-500">${groupItems.length} activos</span>
         </header>
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-1">
           ${groupItems.map(renderAssetRowZesty).join("")}
         </div>
       </section>`
@@ -614,7 +523,7 @@ window.filterSubCategory = (subCat) => {
   renderExploreSections();
 };
 
-// Asset Detail & Trading Modal
+// Asset Detail Modal
 window.openAssetModal = async (symbol) => {
   const item =
     marketCatalog.find((m) => m.symbol === symbol) ||
@@ -622,25 +531,22 @@ window.openAssetModal = async (symbol) => {
       symbol,
       name: symbol,
       category: "Acciones EEUU",
-      subCategory: "Alpaca Tradable",
+      subCategory: "Alpaca",
       price: 0,
       changePct: 0,
-      optionsEnabled: true,
     };
   selectedModalAsset = item;
 
-  document.getElementById("modal-avatar").textContent = item.symbol.slice(0, 4);
   document.getElementById("modal-title").textContent = item.name;
   document.getElementById("modal-symbol-badge").textContent = item.symbol;
-  document.getElementById("modal-category").textContent = `${item.category} · ${item.subCategory}`;
+  document.getElementById("modal-category").textContent = item.subCategory || item.category;
   document.getElementById("modal-price").textContent = fmtMoney(item.price);
   const chgEl = document.getElementById("modal-change");
   const isUp = Number(item.changePct || 0) >= 0;
   chgEl.textContent = `${isUp ? "+" : ""}${Number(item.changePct || 0).toFixed(2)}%`;
-  chgEl.className = `text-sm font-bold ${isUp ? "text-zesty-green-500" : "text-zesty-red-500"}`;
+  chgEl.className = `text-sm font-medium ${isUp ? "text-zesty-green-500" : "text-zesty-red-500"}`;
 
-  document.getElementById("modal-indicators-content").innerHTML =
-    "Calculando canales de 20 días (Donchian, Bollinger y Keltner) + RSI(14) en tiempo real...";
+  document.getElementById("modal-indicators-content").textContent = "Consultando canales a 20 días en Alpaca...";
   document.getElementById("asset-modal").classList.remove("hidden");
 
   try {
@@ -653,34 +559,20 @@ window.openAssetModal = async (symbol) => {
     if (ind) {
       const sl = (ind.last_price * 0.93).toFixed(2);
       document.getElementById("modal-indicators-content").innerHTML = `
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <div class="p-2 rounded-lg bg-white dark:bg-slate-800">
-            <div class="text-[10px] text-slate-400">Promedio 3 Canales (20D)</div>
-            <div class="font-bold text-xs mt-0.5">$${ind.composite_lower} — $${ind.composite_upper}</div>
-          </div>
-          <div class="p-2 rounded-lg bg-white dark:bg-slate-800">
-            <div class="text-[10px] text-slate-400">Media Canal 20D</div>
-            <div class="font-bold text-xs text-zesty-purple-400 mt-0.5">$${ind.composite_middle}</div>
-          </div>
-          <div class="p-2 rounded-lg bg-white dark:bg-slate-800">
-            <div class="text-[10px] text-slate-400">RSI (14 Días)</div>
-            <div class="font-bold text-xs text-amber-400 mt-0.5">${ind.rsi_14}</div>
-          </div>
-          <div class="p-2 rounded-lg bg-white dark:bg-slate-800">
-            <div class="text-[10px] text-slate-400">Stop-Loss (-7%)</div>
-            <div class="font-bold text-xs text-rose-400 mt-0.5">$${sl}</div>
-          </div>
+        <div class="grid grid-cols-4 gap-2 py-2 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+          <div><div class="text-[10px] text-slate-400">Piso 20D</div><div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">$${ind.composite_lower}</div></div>
+          <div><div class="text-[10px] text-slate-400">Media 20D</div><div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">$${ind.composite_middle}</div></div>
+          <div><div class="text-[10px] text-slate-400">Techo 20D</div><div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">$${ind.composite_upper}</div></div>
+          <div><div class="text-[10px] text-slate-400">RSI (14)</div><div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">${ind.rsi_14}</div></div>
         </div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-          <b>💡 En simple:</b> En las últimas 4 semanas este activo se ha movido entre un piso de <b>$${ind.composite_lower}</b> y un techo de <b>$${ind.composite_upper}</b>. Si compras hoy, tu freno de seguridad (-7%) queda en <b>$${sl}</b>.
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
+          En simple: En las últimas 4 semanas se ha movido entre $${ind.composite_lower} y $${ind.composite_upper}. El stop-loss automático del 7% se ubica en $${sl}.
         </p>`;
     } else {
-      document.getElementById("modal-indicators-content").textContent =
-        "Activo listo para operar en Alpaca con regla de Stop-Loss al 7% y máximo 10% del capital.";
+      document.getElementById("modal-indicators-content").textContent = "Disponible para operar en Alpaca.";
     }
   } catch {
-    document.getElementById("modal-indicators-content").textContent =
-      "Listo para operar en Alpaca.";
+    document.getElementById("modal-indicators-content").textContent = "Disponible para operar en Alpaca.";
   }
 };
 
@@ -688,25 +580,21 @@ window.closeAssetModal = () => {
   document.getElementById("asset-modal").classList.add("hidden");
 };
 
-// Options Chain Explorer (Alpaca Level 3)
+// Options Chain
 window.loadOptionsChain = async (underlying) => {
   const sym = (underlying || "NVDA").trim().toUpperCase();
   const listEl = document.getElementById("options-chain-list");
   const bannerEl = document.getElementById("options-underlying-banner");
-  if (listEl) {
-    listEl.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Consultando contratos de opciones activos para <b>${sym}</b> en Alpaca...</div>`;
-  }
+  if (listEl) listEl.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">Cargando contratos de ${sym}...</div>`;
   try {
     const res = await callEngine("get_options_chain", { symbol: sym });
     optionsChainData = res;
     if (bannerEl) {
-      bannerEl.textContent = `Subyacente: ${res.underlying} · Precio Spot: US $${res.underlyingPrice} · ${res.contracts.length} contratos activos encontrados en Alpaca`;
+      bannerEl.textContent = `${res.underlying} · Precio actual: US $${res.underlyingPrice} · ${res.contracts.length} contratos disponibles`;
     }
     renderOptionsChain();
   } catch (err) {
-    if (listEl) {
-      listEl.innerHTML = `<div class="p-6 rounded-xl border border-rose-500/30 text-center text-xs text-rose-400">Error cargando opciones de ${sym}: ${err.message}</div>`;
-    }
+    if (listEl) listEl.innerHTML = `<div class="p-4 text-xs text-zesty-red-500">Error: ${err.message}</div>`;
   }
 };
 
@@ -724,51 +612,38 @@ function renderOptionsChain() {
   }
 
   if (contracts.length === 0) {
-    listEl.innerHTML = `<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">No hay contratos para este filtro.</div>`;
+    listEl.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No hay contratos para este filtro.</div>`;
     return;
   }
-
-  const spot = optionsChainData.underlyingPrice || 100;
 
   listEl.innerHTML = contracts
     .map((c) => {
       const isCall = c.type === "call";
       const totalContractUSD = (Number(c.price || 1.5) * 100).toFixed(0);
-      const itm = isCall ? spot >= c.strike_price : spot <= c.strike_price;
       const simpleExp = isCall
-        ? `💡 En simple (Call): Pagas ~$${totalContractUSD} USD por 1 contrato (100 acciones). Ganas si ${optionsChainData.underlying} sube por encima de $${(c.strike_price + Number(c.price)).toFixed(2)} antes del ${c.expiration_date}.`
-        : `💡 En simple (Put): Pagas ~$${totalContractUSD} USD como seguro bajista. Ganas si ${optionsChainData.underlying} cae por debajo de $${(c.strike_price - Number(c.price)).toFixed(2)} antes del ${c.expiration_date}.`;
+        ? `En simple (Call): Costo total de US $${totalContractUSD} por 1 contrato (100 acciones). Ganas si ${optionsChainData.underlying} sube sobre $${(c.strike_price + Number(c.price)).toFixed(2)} antes del ${c.expiration_date}.`
+        : `En simple (Put): Costo total de US $${totalContractUSD} como cobertura bajista. Ganas si ${optionsChainData.underlying} baja de $${(c.strike_price - Number(c.price)).toFixed(2)} antes del ${c.expiration_date}.`;
 
       return `
-      <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="bg-neutral-50 dark:bg-slate-900 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="space-y-1 flex-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-              isCall ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-            }">${isCall ? "CALL (Alcista)" : "PUT (Bajista)"}</span>
-            <span class="font-extrabold text-sm">Strike $${c.strike_price}</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">Vence: ${c.expiration_date}</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full ${
-              itm ? "bg-zesty-purple-500/20 text-zesty-purple-400 font-bold" : "bg-slate-800 text-slate-400"
-            }">${itm ? "In-The-Money (ITM)" : "Out-Of-The-Money (OTM)"}</span>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${isCall ? "Call" : "Put"} · Strike $${c.strike_price}</span>
+            <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500">Vence ${c.expiration_date}</span>
           </div>
-          <div class="text-xs text-slate-400 font-mono">${c.symbol} · Open Interest: ${c.open_interest}</div>
-          <div class="text-xs text-slate-600 dark:text-slate-300 bg-zesty-purple-50/50 dark:bg-slate-800/60 p-2 rounded-lg mt-1">
-            ${simpleExp}
-          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">${simpleExp}</p>
         </div>
 
         <div class="flex items-center justify-between sm:justify-end gap-4">
           <div class="text-right">
-            <div class="text-xs text-slate-400">Prima / Costo x100</div>
-            <div class="font-extrabold text-sm">$${c.price} <span class="text-xs text-zesty-purple-400">($${totalContractUSD}/contrato)</span></div>
-            <div class="text-[10px] text-slate-400">Bid $${c.bid} · Ask $${c.ask}</div>
+            <p class="text-xs text-slate-500">Prima / Total x100</p>
+            <p class="text-sm font-bold text-slate-900 dark:text-slate-100">US $${c.price} <span class="font-normal text-xs text-slate-500">(US $${totalContractUSD})</span></p>
           </div>
           <button
             onclick="window.proposeOptionTrade('${c.symbol}', ${c.price})"
-            class="px-3.5 py-2 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white text-xs font-bold whitespace-nowrap shadow"
+            class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-zesty-purple-500 text-xs font-medium whitespace-nowrap"
           >
-            Practicar Orden
+            Seleccionar
           </button>
         </div>
       </div>`;
@@ -778,29 +653,27 @@ function renderOptionsChain() {
 
 window.proposeOptionTrade = async (optionSymbol, price) => {
   try {
-    showToast(`Creando propuesta para contrato de opción ${optionSymbol}...`, "purple");
+    showToast(`Preparando orden para ${optionSymbol}...`);
     await callEngine("create_proposal", {
       symbol: optionSymbol,
       side: "buy",
       price,
       qty: 1,
       is_option: true,
-      reason: `Estrategia con Opciones Nivel 3 (${optionSymbol})`,
+      reason: `Contrato de opción (${optionSymbol})`,
     });
     await loadDatabaseData();
     window.switchSection("signals");
-    showToast(`✅ Propuesta de Opción ${optionSymbol} lista para confirmar en App o @Telegram`, "emerald");
   } catch (err) {
-    showToast(`Error creando propuesta de opción: ${err.message}`, "rose");
+    showToast(`Error: ${err.message}`, "rose");
   }
 };
 
-// Render Signals & Confirmations (With Dual Explanation: Simple + Technical)
+// Signals & Confirmations (Clean, restrained cards with plain-language explanation)
 function renderSignals() {
   const pending = signalsData.filter((s) => s.status === "PENDING_CONFIRMATION");
   const history = signalsData.filter((s) => s.status !== "PENDING_CONFIRMATION");
 
-  // Update badges
   const sbBadge = document.getElementById("sidebar-signals-badge");
   const mobBadge = document.getElementById("mob-signals-badge");
   [sbBadge, mobBadge].forEach((b) => {
@@ -810,7 +683,6 @@ function renderSignals() {
     }
   });
 
-  // Dashboard Pending Banner
   const dashBanner = document.getElementById("dashboard-pending-banner");
   if (dashBanner) {
     if (pending.length > 0) {
@@ -818,18 +690,16 @@ function renderSignals() {
       dashBanner.innerHTML = `
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div class="text-sm font-bold text-zesty-purple-600 dark:text-purple-300">
-              ⚡ Tienes ${pending.length} sugerencia(s) de inversión esperando tu confirmación
-            </div>
-            <div class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-              ${pending.map((p) => `<b>${p.side === "buy" ? "COMPRA" : "VENTA"} ${p.symbol}</b> (${fmtMoney(p.suggested_notional)})`).join(" · ")}
-            </div>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">Tienes ${pending.length} orden(es) pendiente(s) de confirmación</p>
+            <p class="text-xs text-slate-500 mt-0.5">
+              ${pending.map((p) => `${p.side === "buy" ? "Comprar" : "Vender"} ${p.symbol} (${fmtMoney(p.suggested_notional)})`).join(" · ")}
+            </p>
           </div>
           <button
             onclick="window.switchSection('signals')"
-            class="px-4 py-2 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white text-xs font-bold w-fit shadow"
+            class="rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 px-4 py-2 text-xs text-white font-medium w-fit"
           >
-            Ver Explicación en Simple y Confirmar
+            Revisar órdenes
           </button>
         </div>`;
     } else {
@@ -841,9 +711,8 @@ function renderSignals() {
   if (pendingEl) {
     if (pending.length === 0) {
       pendingEl.innerHTML = `
-        <div class="p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-          No hay señales pendientes de confirmación en este momento.<br/>
-          Presiona <b>Escanear Triple Canal</b> o explora cualquier activo u opción para generar una propuesta.
+        <div class="p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
+          No tienes órdenes pendientes de confirmación.
         </div>`;
     } else {
       pendingEl.innerHTML = pending
@@ -852,76 +721,58 @@ function renderSignals() {
           const ind = s.indicators || {};
           const simpleExp =
             ind.simple_explanation ||
-            `En simple: El precio de ${s.symbol} ($${s.current_price}) está en una zona atractiva de las últimas 4 semanas. Invertirías $${s.suggested_notional} (${s.portfolio_pct || 10}% de tu capital) con un freno automático de seguridad si cae un 7% ($${s.stop_loss_price}), buscando ganar hacia $${s.take_profit_price}.`;
+            `En simple: El precio de ${s.symbol} ($${s.current_price}) se encuentra cerca del piso de su rango de 20 días. La orden invierte ${fmtMoney(s.suggested_notional)} (${s.portfolio_pct || 10}% de tu capital) con stop-loss en $${s.stop_loss_price} (-7%) y objetivo en $${s.take_profit_price}.`;
 
           return `
-          <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border-2 ${
-            isBuy ? "border-emerald-500/40" : "border-rose-500/40"
-          } shadow-md space-y-4">
-            <div class="flex flex-wrap items-start justify-between gap-2">
+          <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-4">
+            <div class="flex items-start justify-between">
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="px-3 py-1 rounded-lg text-xs font-extrabold uppercase ${
-                    isBuy ? "bg-emerald-500 text-slate-950" : "bg-rose-500 text-white"
-                  }">${isBuy ? "🟢 SUGERENCIA DE COMPRA" : "🔴 SUGERENCIA DE VENTA"}</span>
-                  <span class="text-lg font-extrabold">${s.symbol}</span>
-                  <span class="text-sm font-semibold text-slate-500">@ US $${Number(s.current_price).toFixed(2)}</span>
+                  <span class="font-bold text-base text-slate-900 dark:text-white">${isBuy ? "Comprar" : "Vender"} ${s.symbol}</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500">US $${Number(s.current_price).toFixed(2)}</span>
                 </div>
-                <p class="text-xs font-semibold text-zesty-purple-500 mt-1">${s.trigger_reason}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${s.trigger_reason}</p>
               </div>
-              <span class="text-xs px-3 py-1 rounded-full bg-zesty-purple-500/15 text-zesty-purple-400 font-semibold">
-                📲 Sincronizado con @Telegram
-              </span>
+              <span class="text-xs text-slate-400">Enviada a @dfbe00_inversiones2_bot</span>
             </div>
 
-            <!-- PLAIN LANGUAGE EXPLANATION BOX (For non-technical users) -->
-            <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
-              <div class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                <span>💡 Explicación en simple (Sin tecnicismos)</span>
-              </div>
-              <p class="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed">
-                ${simpleExp}
-              </p>
+            <!-- Simple explanation for non-technical readers -->
+            <div class="p-3.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+              <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">Explicación sencilla</p>
+              <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">${simpleExp}</p>
             </div>
 
-            <!-- Sizing & Risk Metrics -->
-            <div class="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs">
+            <div class="grid grid-cols-3 gap-3 text-xs">
               <div>
-                <div class="text-slate-400">Monto Sugerido (${s.portfolio_pct || 10}% cap)</div>
-                <div class="font-extrabold text-sm mt-0.5">${fmtMoney(s.suggested_notional)} (${s.suggested_qty} unid)</div>
+                <p class="text-slate-500">Monto (${s.portfolio_pct || 10}% del portafolio)</p>
+                <p class="font-bold text-slate-900 dark:text-white mt-0.5">${fmtMoney(s.suggested_notional)} (${s.suggested_qty} unid.)</p>
               </div>
               <div>
-                <div class="text-slate-400">Stop-Loss Automático (-7%)</div>
-                <div class="font-extrabold text-sm text-rose-500 mt-0.5">US $${Number(s.stop_loss_price || 0).toFixed(2)}</div>
+                <p class="text-slate-500">Stop-Loss (-7%)</p>
+                <p class="font-bold text-slate-900 dark:text-white mt-0.5">US $${Number(s.stop_loss_price || 0).toFixed(2)}</p>
               </div>
               <div>
-                <div class="text-slate-400">Meta de Ganancia (Target)</div>
-                <div class="font-extrabold text-sm text-emerald-500 mt-0.5">US $${Number(s.take_profit_price || 0).toFixed(2)}</div>
+                <p class="text-slate-500">Objetivo</p>
+                <p class="font-bold text-slate-900 dark:text-white mt-0.5">US $${Number(s.take_profit_price || 0).toFixed(2)}</p>
               </div>
             </div>
 
-            <!-- Technical Rationale (Triple Channel 20D + RSI) -->
-            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
-              <div class="font-bold text-slate-500">📐 Respaldo Técnico Cuantitativo (Triple Canal 20D + RSI):</div>
-              <div class="text-slate-600 dark:text-slate-300 italic">"${s.ai_rationale || ""}"</div>
-              <div class="text-[11px] text-slate-400 pt-1">
-                Canal Compuesto 20D: Inf $${ind.composite_lower ?? "-"} | Media $${ind.composite_middle ?? "-"} | Sup $${ind.composite_upper ?? "-"} · RSI(14): ${ind.rsi_14 ?? "-"}
-              </div>
-            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Detalle técnico: ${s.ai_rationale || ""}
+            </p>
 
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-3 pt-1">
+            <div class="flex gap-2 pt-1">
               <button
                 onclick="window.confirmSignal('${s.id}')"
-                class="py-3.5 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-zesty-purple-500/25 transition"
+                class="rounded-xl px-5 py-2 text-xs font-medium bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white"
               >
-                ✅ Confirmar y Ejecutar en Alpaca
+                Confirmar orden en Alpaca
               </button>
               <button
                 onclick="window.rejectSignal('${s.id}')"
-                class="py-3.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-500/20 text-rose-500 font-bold text-xs sm:text-sm transition"
+                class="rounded-xl px-4 py-2 text-xs font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                ❌ Rechazar Sugerencia
+                Descartar
               </button>
             </div>
           </div>`;
@@ -933,23 +784,20 @@ function renderSignals() {
   const historyEl = document.getElementById("history-signals-list");
   if (historyEl) {
     if (history.length === 0) {
-      historyEl.innerHTML = `<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Sin historial de señales resueltas aún.</div>`;
+      historyEl.innerHTML = `<div class="p-4 text-xs text-slate-400">Sin historial de órdenes aún.</div>`;
     } else {
       historyEl.innerHTML = history
-        .slice(0, 15)
+        .slice(0, 12)
         .map((s) => {
-          const isExec = s.status === "CONFIRMED_EXECUTED";
           return `
-          <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div class="p-4 rounded-lg bg-neutral-50 dark:bg-slate-900 flex items-center justify-between text-xs">
             <div>
-              <div class="font-bold">
-                ${s.side === "buy" ? "🟢 COMPRA" : "🔴 VENTA"} ${s.symbol} · ${s.suggested_qty} unid (${fmtMoney(s.suggested_notional)})
-              </div>
-              <div class="text-slate-400 mt-0.5">${s.trigger_reason} · Confirmado vía ${(s.confirmed_via || "app").toUpperCase()}</div>
+              <p class="font-bold text-slate-900 dark:text-slate-100">${s.side === "buy" ? "Compra" : "Venta"} ${s.symbol} · ${s.suggested_qty} unid. (${fmtMoney(s.suggested_notional)})</p>
+              <p class="text-slate-500 mt-0.5">${s.trigger_reason}</p>
             </div>
-            <span class="px-2.5 py-1 rounded-full font-bold ${
-              isExec ? "bg-emerald-500/20 text-emerald-500" : "bg-slate-200 dark:bg-slate-800 text-slate-400"
-            }">${isExec ? "EJECUTADA EN ALPACA" : s.status}</span>
+            <span class="px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+              ${s.status === "CONFIRMED_EXECUTED" ? "Ejecutada" : "Descartada"}
+            </span>
           </div>`;
         })
         .join("");
@@ -957,7 +805,7 @@ function renderSignals() {
   }
 }
 
-// Render 20D Triple Channel Radar
+// Watchlist (20D Channels)
 function renderWatchlist() {
   const container = document.getElementById("watchlist-cards");
   if (!container) return;
@@ -966,54 +814,30 @@ function renderWatchlist() {
     .map((w) => {
       const price = Number(w.last_price || 0);
       const chg = Number(w.change_pct || 0);
-      const compLow = Number(w.composite_lower || price * 0.95);
-      const compHigh = Number(w.composite_upper || price * 1.05);
-      const span = Math.max(0.01, compHigh - compLow);
-      const pctPos = Math.min(100, Math.max(0, ((price - compLow) / span) * 100));
+      const isUp = chg >= 0;
 
       return `
-      <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-extrabold text-base">${w.symbol}</span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-zesty-purple-500/15 text-zesty-purple-400 font-semibold">${w.category}</span>
-            </div>
-            <div class="text-xs text-slate-400">${w.name}</div>
+      <div class="bg-neutral-50 dark:bg-slate-900 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${w.name}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500">${w.symbol}</span>
           </div>
+          <p class="text-xs text-slate-500">
+            Canal promedio 20D: $${w.composite_lower ?? "-"} – $${w.composite_upper ?? "-"} (Media $${w.composite_middle ?? "-"}) · RSI(14): ${w.rsi_14 ?? "-"}
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between sm:justify-end gap-4">
           <div class="text-right">
-            <div class="font-extrabold text-base">${price ? fmtMoney(price) : "—"}</div>
-            <div class="text-xs font-bold ${chg >= 0 ? "text-zesty-green-500" : "text-zesty-red-500"}">
-              ${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%
-            </div>
+            <p class="text-sm font-medium text-slate-900 dark:text-slate-100">${price ? fmtMoney(price) : "—"}</p>
+            <p class="text-xs ${isUp ? "text-zesty-green-500" : "text-zesty-red-500"}">${isUp ? "+" : ""}${chg.toFixed(2)}%</p>
           </div>
-        </div>
-
-        <div>
-          <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-            <span>Piso 20D: $${w.composite_lower ?? "-"}</span>
-            <span class="text-zesty-purple-400 font-bold">Media: $${w.composite_middle ?? "-"}</span>
-            <span>Techo 20D: $${w.composite_upper ?? "-"}</span>
-          </div>
-          <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-            <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-zesty-purple-500 to-rose-500" style="width: ${pctPos.toFixed(0)}%;"></div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-4 gap-1.5 text-[10px] text-center bg-slate-100 dark:bg-slate-800/70 p-2 rounded-lg">
-          <div><div class="text-slate-400">Donchian</div><div class="font-bold mt-0.5">${w.donchian_lower ?? "-"}-${w.donchian_upper ?? "-"}</div></div>
-          <div><div class="text-slate-400">Bollinger</div><div class="font-bold mt-0.5">${w.bollinger_lower ?? "-"}-${w.bollinger_upper ?? "-"}</div></div>
-          <div><div class="text-slate-400">Keltner</div><div class="font-bold mt-0.5">${w.keltner_lower ?? "-"}-${w.keltner_upper ?? "-"}</div></div>
-          <div><div class="text-slate-400">RSI (14)</div><div class="font-extrabold text-amber-500 mt-0.5">${w.rsi_14 ?? "-"}</div></div>
-        </div>
-
-        <div class="flex items-center justify-between pt-1">
-          <span class="text-[11px] text-slate-400">Stop-Loss (-7%): $${price ? (price * 0.93).toFixed(2) : "-"}</span>
           <button
             onclick="window.proposeQuickTrade('${w.symbol}', 'buy')"
-            class="px-3.5 py-1.5 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white text-xs font-bold"
+            class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium hover:border-zesty-purple-500"
           >
-            Proponer Compra
+            Preparar orden
           </button>
         </div>
       </div>`;
@@ -1021,55 +845,40 @@ function renderWatchlist() {
     .join("");
 }
 
-// Render News Section
 window.loadMarketNews = async () => {
   const container = document.getElementById("news-list-container");
   if (!container) return;
-  container.innerHTML = `<div class="p-6 text-xs text-slate-400">Cargando noticias en tiempo real desde Alpaca Market News...</div>`;
+  container.innerHTML = `<div class="py-6 text-xs text-slate-400">Cargando noticias desde Alpaca...</div>`;
   try {
     const res = await callEngine("get_news");
     const newsList = res.news || [];
     if (newsList.length === 0) {
-      container.innerHTML = `<div class="p-6 text-xs text-slate-400">No hay noticias disponibles en este momento.</div>`;
+      container.innerHTML = `<div class="py-6 text-xs text-slate-400">No hay noticias disponibles.</div>`;
       return;
     }
     container.innerHTML = newsList
       .map(
         (n) => `
-      <a href="${n.url}" target="_blank" rel="noopener noreferrer" class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-zesty-purple-500 transition flex flex-col justify-between gap-2">
-        <div>
-          <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-zesty-purple-500/15 text-zesty-purple-400">${n.source}</span>
-            ${(n.symbols || [])
-              .slice(0, 4)
-              .map((s) => `<span class="text-[10px] px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700 font-semibold">${s}</span>`)
-              .join("")}
-          </div>
-          <h3 class="font-bold text-sm leading-snug">${n.headline}</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">${n.summary || ""}</p>
+      <a href="${n.url}" target="_blank" rel="noopener noreferrer" class="p-4 rounded-lg bg-neutral-50 dark:bg-slate-900 hover:bg-neutral-100 dark:hover:bg-slate-800/80 transition flex flex-col gap-1">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span>${n.source} · ${(n.symbols || []).slice(0, 3).join(", ")}</span>
+          <span>${new Date(n.created_at).toLocaleDateString("es-CL")}</span>
         </div>
-        <div class="text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex justify-between">
-          <span>${new Date(n.created_at).toLocaleString("es-CL")}</span>
-          <span class="text-zesty-purple-400 font-semibold">Leer nota →</span>
-        </div>
+        <h3 class="font-bold text-sm text-slate-900 dark:text-slate-100">${n.headline}</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">${n.summary || ""}</p>
       </a>`
       )
       .join("");
   } catch (err) {
-    container.innerHTML = `<div class="p-4 text-xs text-rose-400">Error cargando noticias: ${err.message}</div>`;
+    container.innerHTML = `<div class="p-4 text-xs text-zesty-red-500">Error: ${err.message}</div>`;
   }
 };
 
-// Render Chat & Speak AI Response if TTS is enabled
 function renderChat() {
   const box = document.getElementById("chat-messages-box");
   if (!box) return;
   if (chatData.length === 0) {
-    box.innerHTML = `
-      <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-        Háblale por micrófono 🎙️ o escribe a tu asistente <b>Zesty Quant AI</b>.<br/>
-        Puedes pedirle <b>operar en Alpaca</b> o <b>modificar la aplicación en vivo</b> (ej. "agrega una sección de noticias").
-      </div>`;
+    box.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">Escribe o usa el micrófono para hablar con tu asistente.</div>`;
     return;
   }
 
@@ -1077,25 +886,16 @@ function renderChat() {
     .map((m) => {
       const isUser = m.sender === "user";
       const isSys = m.sender === "system";
-      const viaBadge =
-        m.channel === "telegram"
-          ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">@Telegram</span>`
-          : `<span class="text-[9px] px-1.5 py-0.5 rounded bg-zesty-purple-500/20 text-zesty-purple-400">Zesty App</span>`;
-
       if (isSys) {
-        return `<div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs text-center font-medium">${m.message}</div>`;
+        return `<div class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs text-center">${m.message}</div>`;
       }
-
       return `
       <div class="flex flex-col ${isUser ? "items-end" : "items-start"}">
-        <div class="flex items-center gap-1.5 mb-1 px-1">
-          <span class="text-[10px] font-bold text-slate-400">${isUser ? "Diego" : "Zesty Quant AI"}</span>
-          ${viaBadge}
-        </div>
-        <div class="max-w-[85%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
+        <span class="text-[10px] text-slate-400 mb-1 px-1">${isUser ? "Tú" : "Asistente"} · ${m.channel === "telegram" ? "Telegram" : "Web"}</span>
+        <div class="max-w-[85%] p-3.5 rounded-xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? "bg-zesty-purple-500 text-white font-medium rounded-br-sm shadow"
-            : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-bl-sm shadow-sm"
+            ? "bg-zesty-purple-500 text-white"
+            : "bg-neutral-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
         }">${m.message}</div>
       </div>`;
     })
@@ -1112,14 +912,10 @@ function speakTextIfEnabled(text) {
     utter.lang = "es-ES";
     utter.rate = 1.05;
     window.speechSynthesis.speak(utter);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
-// Voice Capture (Web Speech API + MediaRecorder Multimodal Fallback)
 async function toggleVoiceCapture() {
-  const micBtn = document.getElementById("mic-btn");
   const banner = document.getElementById("voice-status-banner");
   const input = document.getElementById("chat-input");
 
@@ -1137,7 +933,6 @@ async function toggleVoiceCapture() {
       speechRecognizer.continuous = false;
 
       isRecordingVoice = true;
-      micBtn?.classList.add("mic-recording", "bg-rose-500", "text-white");
       banner?.classList.remove("hidden");
 
       speechRecognizer.onresult = (event) => {
@@ -1150,28 +945,21 @@ async function toggleVoiceCapture() {
 
       speechRecognizer.onend = () => {
         isRecordingVoice = false;
-        micBtn?.classList.remove("mic-recording", "bg-rose-500", "text-white");
         banner?.classList.add("hidden");
         const finalVal = input?.value.trim();
-        if (finalVal) {
-          sendChatMessage(finalVal);
-        }
+        if (finalVal) sendChatMessage(finalVal);
       };
 
       speechRecognizer.onerror = () => {
         isRecordingVoice = false;
-        micBtn?.classList.remove("mic-recording", "bg-rose-500", "text-white");
         banner?.classList.add("hidden");
       };
 
       speechRecognizer.start();
       return;
-    } catch {
-      // Fallback to MediaRecorder below
-    }
+    } catch {}
   }
 
-  // Fallback: Raw Microphone Audio Recording sent to Gemini 4 Hydrogen
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioChunks = [];
@@ -1186,7 +974,7 @@ async function toggleVoiceCapture() {
       reader.onloadend = async () => {
         const base64 = String(reader.result || "").split(",")[1];
         if (base64) {
-          showToast("🎙️ Procesando tu voz con Gemini AI...", "purple");
+          showToast("Procesando audio...");
           const res = await callEngine("chat", {
             message: "",
             audio_base64: base64,
@@ -1200,7 +988,6 @@ async function toggleVoiceCapture() {
       reader.readAsDataURL(blob);
     };
     isRecordingVoice = true;
-    micBtn?.classList.add("mic-recording", "bg-rose-500", "text-white");
     banner?.classList.remove("hidden");
     mediaRecorder.start();
   } catch (err) {
@@ -1219,11 +1006,9 @@ window.stopVoiceCapture = () => {
     mediaRecorder.stop();
   }
   isRecordingVoice = false;
-  document.getElementById("mic-btn")?.classList.remove("mic-recording", "bg-rose-500", "text-white");
   document.getElementById("voice-status-banner")?.classList.add("hidden");
 };
 
-// Database & Portfolio Loaders
 async function loadDatabaseData() {
   const prevPendingIds = new Set(signalsData.filter((s) => s.status === "PENDING_CONFIRMATION").map((s) => s.id));
 
@@ -1238,11 +1023,10 @@ async function loadDatabaseData() {
   signalsData = sigs || [];
   chatData = chats || [];
 
-  // Trigger Push Notification if a brand-new pending signal arrived
   for (const s of signalsData) {
     if (s.status === "PENDING_CONFIRMATION" && prevPendingIds.size > 0 && !prevPendingIds.has(s.id)) {
       sendLocalPushNotification(
-        `${s.side === "buy" ? "🟢 Compra" : "🔴 Venta"} sugerida: ${s.symbol} @ $${s.current_price}`,
+        `Nueva orden por confirmar: ${s.symbol}`,
         s.indicators?.simple_explanation || s.trigger_reason,
         "signals"
       );
@@ -1270,42 +1054,41 @@ async function loadAlpacaPortfolio(period = "1M") {
     const data = await callEngine("get_portfolio", { period });
     portfolioState = data;
     renderPortfolio();
-  } catch (err) {
-    console.warn("Alpaca fetch warning:", err.message);
+  } catch {
     renderPortfolio();
   }
 }
 
-// Global Actions
+window.refreshAll = async () => {
+  showToast("Actualizando portafolio...");
+  await Promise.all([loadDatabaseData(), loadAlpacaPortfolio()]);
+};
+
 window.runScanNow = async () => {
   try {
-    showToast("🔍 Escaneando Triple Canal 20D (Donchian + Bollinger + Keltner) + RSI(14)...", "purple");
+    showToast("Escaneando canales de 20 días...");
     const res = await callEngine("scan_market", { force_proposal: false });
     await loadDatabaseData();
-    showToast(
-      `✅ Escaneo completado (${res.scanned} activos). Nuevas señales enviadas a @Telegram: ${res.newSignals?.length || 0}`,
-      "emerald"
-    );
+    showToast(`Indicadores actualizados (${res.scanned} activos).`);
   } catch (err) {
-    showToast(`Error al escanear: ${err.message}`, "rose");
+    showToast(`Error: ${err.message}`, "rose");
   }
 };
 
 window.confirmSignal = async (signalId) => {
   try {
-    showToast("Ejecutando orden confirmada en tu cuenta Alpaca PA3XXQ6PL...", "purple");
+    showToast("Enviando orden a Alpaca...");
     await callEngine("confirm_signal", { signal_id: signalId });
-    showToast("✅ ¡Orden ejecutada en Alpaca y confirmada en @Telegram!", "emerald");
+    showToast("Orden ejecutada en Alpaca.");
     await Promise.all([loadDatabaseData(), loadAlpacaPortfolio()]);
   } catch (err) {
-    showToast(`Error al ejecutar en Alpaca: ${err.message}`, "rose");
+    showToast(`Error: ${err.message}`, "rose");
   }
 };
 
 window.rejectSignal = async (signalId) => {
   try {
     await callEngine("reject_signal", { signal_id: signalId });
-    showToast("Sugerencia rechazada.", "purple");
     await loadDatabaseData();
   } catch (err) {
     showToast(`Error: ${err.message}`, "rose");
@@ -1315,11 +1098,10 @@ window.rejectSignal = async (signalId) => {
 window.proposeQuickTrade = async (symbol, side, qty, useMargin = false) => {
   try {
     window.closeAssetModal();
-    showToast(`Generando análisis en simple + técnico para ${symbol} y enviando a @Telegram...`, "purple");
+    showToast(`Preparando orden para ${symbol}...`);
     await callEngine("create_proposal", { symbol, side, qty, use_margin: useMargin });
     await loadDatabaseData();
     window.switchSection("signals");
-    showToast(`✅ Sugerencia para ${symbol} lista para tu confirmación`, "emerald");
   } catch (err) {
     showToast(`Error: ${err.message}`, "rose");
   }
@@ -1332,20 +1114,16 @@ async function sendChatMessage(text) {
   if (btn) btn.disabled = true;
 
   try {
-    showToast("🤖 Zesty Quant AI procesando...", "purple");
     const res = await callEngine("chat", { message: text });
     await loadDatabaseData();
     if (res.reply) speakTextIfEnabled(res.reply);
     if (res.uiConfig) {
       uiConfig = res.uiConfig;
       applyDynamicUiConfig();
-      showToast("✨ ¡Interfaz de la app actualizada desde el Chat!", "emerald");
     }
-    if (res.navigateTo) {
-      window.switchSection(res.navigateTo);
-    }
+    if (res.navigateTo) window.switchSection(res.navigateTo);
   } catch (err) {
-    showToast(`Error en chat: ${err.message}`, "rose");
+    showToast(`Error: ${err.message}`, "rose");
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -1371,7 +1149,6 @@ async function initAuthenticatedApp() {
   await Promise.all([loadDatabaseData(), loadAlpacaPortfolio(), loadExploreCatalog()]);
 }
 
-// DOM Initialization
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.lucide) window.lucide.createIcons();
 
@@ -1389,16 +1166,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     deferredInstallPrompt = e;
   });
 
-  // Theme Toggle (Light / Dark)
-  const savedTheme = localStorage.getItem("zesty_theme") || "dark";
+  // Default to Zesty's clean Light Mode unless user switched to Dark
+  const savedTheme = localStorage.getItem("zesty_theme") || "light";
   document.documentElement.classList.toggle("dark", savedTheme === "dark");
+  document.documentElement.classList.toggle("light", savedTheme !== "dark");
+  document.documentElement.style.colorScheme = savedTheme === "dark" ? "dark" : "light";
 
   document.getElementById("theme-toggle-btn")?.addEventListener("click", () => {
     const isDark = document.documentElement.classList.toggle("dark");
+    document.documentElement.classList.toggle("light", !isDark);
+    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
     localStorage.setItem("zesty_theme", isDark ? "dark" : "light");
   });
 
-  // Mobile Menu Drawer Toggle
   document.getElementById("mobile-menu-btn")?.addEventListener("click", () => {
     const sb = document.getElementById("app-sidebar");
     const bd = document.getElementById("sidebar-backdrop");
@@ -1411,11 +1191,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("sidebar-backdrop")?.classList.add("hidden");
   });
 
-  // Navbar Push & Desktop Install Buttons
   document.getElementById("push-perm-btn")?.addEventListener("click", window.requestPushNotificationPermission);
   document.getElementById("desktop-install-btn")?.addEventListener("click", window.installOrDownloadDesktopApp);
 
-  // Sidebar & Bottom Nav Links
   document.querySelectorAll(".sidebar-link, .mob-nav-btn").forEach((el) => {
     el.addEventListener("click", (e) => {
       e.preventDefault();
@@ -1424,18 +1202,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // Currency Toggle (USD vs CLP)
   const usdBtn = document.getElementById("curr-usd-btn");
   const clpBtn = document.getElementById("curr-clp-btn");
   const updateCurrencyBtns = () => {
     const isUsd = displayCurrency === "USD";
     if (usdBtn && clpBtn) {
       usdBtn.className = isUsd
-        ? "flex-1 rounded-lg px-5 py-2 text-sm font-semibold transition-colors sm:flex-none bg-white text-zesty-purple-600 shadow-sm dark:bg-slate-700 dark:text-zesty-purple-300"
-        : "flex-1 rounded-lg px-5 py-2 text-sm font-medium transition-colors sm:flex-none text-slate-600 dark:text-slate-400";
+        ? "flex-1 rounded-lg px-6 py-2 text-sm font-medium transition-colors sm:flex-none bg-white text-zesty-purple-500 shadow-sm dark:bg-slate-700 dark:text-zesty-purple-400"
+        : "flex-1 rounded-lg px-6 py-2 text-sm font-medium transition-colors sm:flex-none text-slate-500 hover:text-slate-700 dark:text-slate-400";
       clpBtn.className = !isUsd
-        ? "flex-1 rounded-lg px-5 py-2 text-sm font-semibold transition-colors sm:flex-none bg-white text-zesty-purple-600 shadow-sm dark:bg-slate-700 dark:text-zesty-purple-300"
-        : "flex-1 rounded-lg px-5 py-2 text-sm font-medium transition-colors sm:flex-none text-slate-600 dark:text-slate-400";
+        ? "flex-1 rounded-lg px-6 py-2 text-sm font-medium transition-colors sm:flex-none bg-white text-zesty-purple-500 shadow-sm dark:bg-slate-700 dark:text-zesty-purple-400"
+        : "flex-1 rounded-lg px-6 py-2 text-sm font-medium transition-colors sm:flex-none text-slate-500 hover:text-slate-700 dark:text-slate-400";
     }
     renderPortfolio();
     renderSignals();
@@ -1450,21 +1227,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateCurrencyBtns();
   });
 
-  // Portfolio Chart Period Buttons
   document.querySelectorAll(".period-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const p = btn.getAttribute("data-period") || "1M";
       document.querySelectorAll(".period-btn").forEach((b) => {
         const active = b.getAttribute("data-period") === p;
         b.className = active
-          ? "period-btn rounded-xl px-3.5 py-1.5 text-xs font-semibold bg-zesty-purple-500 text-white shadow-xs"
-          : "period-btn rounded-xl px-3.5 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200";
+          ? "period-btn rounded-xl px-3.5 py-1.5 text-xs sm:text-sm bg-zesty-purple-500 text-white"
+          : "period-btn rounded-xl px-3.5 py-1.5 text-xs sm:text-sm bg-slate-200 hover:bg-slate-300 text-slate-900 dark:text-slate-100 dark:bg-slate-800";
       });
       loadAlpacaPortfolio(p);
     });
   });
 
-  // Explore Search & Pills
   document.getElementById("explore-search-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const q = document.getElementById("explore-search-input")?.value.trim();
@@ -1481,14 +1256,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.querySelectorAll(".explore-pill").forEach((p) => {
         const active = p.getAttribute("data-filter") === exploreMainFilter;
         p.className = active
-          ? "explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-semibold transition-all border border-zesty-purple-500 bg-zesty-purple-500 text-white"
-          : "explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/70 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300";
+          ? "explore-pill text-nowrap inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all border border-zesty-purple-500 bg-zesty-purple-500 text-white"
+          : "explore-pill text-nowrap inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/80 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300";
       });
       renderExploreSections();
     });
   });
 
-  // Modal Propose & Options Buttons
   document.getElementById("modal-propose-btn")?.addEventListener("click", () => {
     if (!selectedModalAsset) return;
     const side = document.getElementById("modal-trade-side").value;
@@ -1505,7 +1279,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.loadOptionsChain(sym);
   });
 
-  // Signals Manual Proposal Form
   document.getElementById("new-proposal-toggle-btn")?.addEventListener("click", () => {
     document.getElementById("proposal-form")?.classList.toggle("hidden");
   });
@@ -1521,7 +1294,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("proposal-form").classList.add("hidden");
   });
 
-  // Add Watchlist Symbol
   document.getElementById("add-watchlist-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const sym = document.getElementById("add-symbol-input").value.trim().toUpperCase();
@@ -1529,24 +1301,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!sym) return;
     const { error } = await supabase.from("watchlist").upsert({
       symbol: sym,
-      name: `${sym} Asset`,
+      name: sym,
       category: cat,
       enabled: true,
     });
     if (error) showToast(`Error: ${error.message}`, "rose");
     else {
       document.getElementById("add-symbol-input").value = "";
-      showToast(`${sym} añadido al Radar. Escaneando canales 20D...`, "emerald");
       await window.runScanNow();
     }
   });
 
-  // Chat Form, Voice Mic & TTS Toggle
   document.getElementById("mic-btn")?.addEventListener("click", toggleVoiceCapture);
   document.getElementById("tts-toggle-btn")?.addEventListener("click", () => {
     ttsEnabled = !ttsEnabled;
     const lbl = document.getElementById("tts-status-label");
-    if (lbl) lbl.textContent = ttsEnabled ? "Voz IA: ON 🔊" : "Voz IA: OFF";
+    if (lbl) lbl.textContent = ttsEnabled ? "Respuesta por voz: On" : "Respuesta por voz: Off";
   });
 
   document.getElementById("chat-form")?.addEventListener("submit", (e) => {
@@ -1556,10 +1326,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.querySelectorAll(".chat-chip").forEach((chip) => {
-    chip.addEventListener("click", () => sendChatMessage(chip.textContent.replace(/^[➕💡🗑️🔍]\s*/, "").trim()));
+    chip.addEventListener("click", () => sendChatMessage(chip.textContent.trim()));
   });
 
-  // Settings Forms
   document.getElementById("strategy-config-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const { error } = await supabase
@@ -1573,13 +1342,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       })
       .eq("id", 1);
     if (error) showToast(`Error: ${error.message}`, "rose");
-    else showToast("✅ Parámetros guardados en Supabase", "emerald");
+    else showToast("Configuración guardada.");
   });
 
   document.getElementById("test-telegram-btn")?.addEventListener("click", async () => {
     try {
       await callEngine("test_telegram");
-      showToast("📲 Mensaje enviado a @dfbe00_inversiones2_bot", "emerald");
+      showToast("Mensaje enviado a @dfbe00_inversiones2_bot");
     } catch (err) {
       showToast(`Error: ${err.message}`, "rose");
     }
@@ -1592,7 +1361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (error) showToast(`Error: ${error.message}`, "rose");
     else {
       document.getElementById("new-password-input").value = "";
-      showToast("✅ Contraseña actualizada", "emerald");
+      showToast("Contraseña actualizada.");
     }
   });
 
@@ -1601,7 +1370,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.reload();
   });
 
-  // Check Session
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -1609,7 +1377,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     initAuthenticatedApp();
   }
 
-  // Login Form
   document.getElementById("login-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = document.getElementById("login-email").value.trim().toLowerCase();
@@ -1619,7 +1386,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     errEl.classList.add("hidden");
 
     if (email !== OWNER_EMAIL) {
-      errEl.textContent = "⛔ Acceso restringido exclusivamente a dfbe00@gmail.com.";
+      errEl.textContent = "Acceso exclusivo para dfbe00@gmail.com.";
       errEl.classList.remove("hidden");
       return;
     }
@@ -1628,10 +1395,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     btn.textContent = "Ingresando...";
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     btn.disabled = false;
-    btn.textContent = "Ingresar a Zesty Quant";
+    btn.textContent = "Continuar";
 
     if (error) {
-      errEl.textContent = `Error: ${error.message}`;
+      errEl.textContent = error.message;
       errEl.classList.remove("hidden");
       return;
     }
