@@ -200,7 +200,11 @@
             <ul class="flex flex-col text-xs mt-1">
               <a data-nav="dashboard" class="sidebar-link flex items-center px-4 py-2.5 text-sm transition-colors border-l-5 border-zesty-purple-500 bg-zesty-purple-50 dark:bg-zesty-purple-950/20 text-slate-800 dark:text-slate-200 font-medium" href="#dashboard">
                 <span class="flex-shrink-0"><i data-lucide="wallet" class="w-5 h-5"></i></span>
-                <span class="ml-3">Dashboard</span>
+                <span class="ml-3">Dashboard Alpaca</span>
+              </a>
+              <a data-nav="btg" class="sidebar-link flex items-center px-4 py-2.5 text-sm transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60" href="#btg">
+                <span class="flex-shrink-0"><i data-lucide="landmark" class="w-5 h-5"></i></span>
+                <span class="ml-3">Inversiones BTG</span>
               </a>
               <a data-nav="explore" class="sidebar-link flex items-center px-4 py-2.5 text-sm transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60" href="#explore">
                 <span class="flex-shrink-0"><i data-lucide="compass" class="w-5 h-5"></i></span>
@@ -391,6 +395,122 @@
               <span id="positions-count" class="text-xs text-slate-500">0 activas</span>
             </div>
             <div id="positions-list"></div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 1B. INVERSIONES BTG PACTUAL (INDEPENDIENTE)-->
+        <!-- ========================================== -->
+        <section id="sec-btg" class="hidden min-h-dvh p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 class="text-2xl font-bold">Inversiones BTG Pactual</h1>
+              <span class="text-sm text-slate-500 dark:text-slate-400">
+                Portafolio independiente de Alpaca · Actualización constante y revisión automática 3 veces al día (9:30, 13:00 y 18:30)
+              </span>
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick="window.refreshBtgPortfolio()"
+                class="rounded-xl px-4 py-2 text-xs font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5"
+              >
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Actualizar precios</span>
+              </button>
+              <label
+                class="cursor-pointer rounded-xl px-4 py-2 text-xs font-medium bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white flex items-center gap-1.5"
+              >
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span>Subir foto / captura BTG</span>
+                <input id="btg-photo-input" type="file" accept="image/*" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- BTG Summary Card -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-5 bg-zesty-purple-50 dark:bg-slate-900/20">
+              <p class="text-xs text-slate-500 dark:text-slate-400">Valorizado actual BTG (CLP)</p>
+              <p id="btg-total-clp" class="text-2xl font-bold text-slate-900 dark:text-white mt-1">CLP $0</p>
+              <p id="btg-pnl-clp" class="text-xs text-slate-500 mt-1"> Sin posiciones en CLP</p>
+            </div>
+            <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-5 bg-zesty-purple-50 dark:bg-slate-900/20">
+              <p class="text-xs text-slate-500 dark:text-slate-400">Valorizado actual BTG (USD)</p>
+              <p id="btg-total-usd" class="text-2xl font-bold text-slate-900 dark:text-white mt-1">US $0.00</p>
+              <p id="btg-pnl-usd" class="text-xs text-slate-500 mt-1">Sin posiciones en USD</p>
+            </div>
+            <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-5 bg-zesty-purple-50 dark:bg-slate-900/20 flex flex-col justify-between">
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Revisión programada GitHub Actions</p>
+                <p class="text-sm font-bold text-slate-900 dark:text-white mt-1">9:30 AM · 1:00 PM · 6:30 PM</p>
+              </div>
+              <p class="text-xs text-slate-500 mt-2">Envía alertas automáticas a @dfbe00_inversiones2_bot</p>
+            </div>
+          </div>
+
+          <!-- Active Positions in BTG -->
+          <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold">Mis acciones y activos en BTG Pactual</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Puedes agregarlos subiendo una captura de pantalla desde aquí o desde @Telegram, o con el formulario manual
+                </p>
+              </div>
+              <button
+                onclick="document.getElementById('btg-manual-form').classList.toggle('hidden')"
+                class="rounded-xl px-3.5 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700"
+              >
+                + Agregar manual
+              </button>
+            </div>
+
+            <!-- Manual Add BTG Form -->
+            <form id="btg-manual-form" class="hidden p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                <div>
+                  <label class="text-slate-500">Ticker (ej. FALABELLA.SN)</label>
+                  <input id="btg-sym" type="text" placeholder="SQM-B.SN" required class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 uppercase" />
+                </div>
+                <div>
+                  <label class="text-slate-500">Nombre</label>
+                  <input id="btg-name" type="text" placeholder="SQM Serie B" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                </div>
+                <div>
+                  <label class="text-slate-500">Moneda</label>
+                  <select id="btg-curr" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <option value="CLP">CLP ($)</option>
+                    <option value="USD">USD (US$)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-slate-500">Cantidad</label>
+                  <input id="btg-qty" type="number" step="0.0001" placeholder="100" required class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                </div>
+                <div>
+                  <label class="text-slate-500">Precio compra unit.</label>
+                  <input id="btg-buy-price" type="number" step="0.01" placeholder="38500" required class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                </div>
+              </div>
+              <button type="submit" class="px-4 py-2 rounded-xl bg-zesty-purple-500 text-white text-xs font-medium">
+                Guardar en portafolio BTG
+              </button>
+            </form>
+
+            <div id="btg-positions-list" class="flex flex-col gap-2"></div>
+          </div>
+
+          <!-- Active Scheduled Monitors & Commands (9:30, 13:00, 18:30) -->
+          <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold">Alertas y comandos programados (9:30, 13:00 y 18:30)</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Pídelos desde el chat (ej. "cuando el rendimiento de esta acción de BTG llegue a 0% mándame un mensaje por Telegram")
+                </p>
+              </div>
+            </div>
+            <div id="btg-monitors-list" class="flex flex-col gap-2"></div>
           </div>
         </section>
 
@@ -630,16 +750,13 @@
 
           <div class="flex gap-2 overflow-x-auto pb-2 mb-2 text-xs hide-scrollbar">
             <button class="chat-chip px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-neutral-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+              Cuando el rendimiento de mis acciones de BTG llegue a 0% y ya no sea negativo mándame un mensaje por Telegram
+            </button>
+            <button class="chat-chip px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-neutral-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 whitespace-nowrap">
               Agrega una nueva sección de noticias
             </button>
             <button class="chat-chip px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-neutral-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 whitespace-nowrap">
               Explícame en simple qué recomiendas comprar hoy
-            </button>
-            <button class="chat-chip px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-neutral-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 whitespace-nowrap">
-              Agrega una calculadora de ganancias al Dashboard
-            </button>
-            <button class="chat-chip px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-neutral-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 whitespace-nowrap">
-              Elimina las secciones personalizadas
             </button>
           </div>
 
@@ -651,6 +768,13 @@
           </div>
 
           <form id="chat-form" class="mt-1 flex items-center gap-2">
+            <label
+              title="Adjuntar foto o captura de acción BTG"
+              class="cursor-pointer p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+            >
+              <i data-lucide="camera" class="w-4 h-4"></i>
+              <input id="chat-photo-input" type="file" accept="image/*" class="hidden" />
+            </label>
             <button
               id="mic-btn"
               type="button"
@@ -662,7 +786,7 @@
             <input
               id="chat-input"
               type="text"
-              placeholder="Escribe un mensaje o pide un cambio para la app..."
+              placeholder="Escribe, adjunta una captura BTG o pide una alerta..."
               class="flex-1 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-zesty-purple-500"
             />
             <button
@@ -821,15 +945,15 @@
       <div class="grid grid-cols-5 pt-2 pb-1">
         <button data-nav="dashboard" class="mob-nav-btn flex flex-col items-center gap-0.5 text-zesty-purple-500">
           <i data-lucide="wallet" class="w-5 h-5"></i>
-          <span class="text-[10px]">Dashboard</span>
+          <span class="text-[10px]">Alpaca</span>
+        </button>
+        <button data-nav="btg" class="mob-nav-btn flex flex-col items-center gap-0.5 text-slate-400">
+          <i data-lucide="landmark" class="w-5 h-5"></i>
+          <span class="text-[10px]">BTG</span>
         </button>
         <button data-nav="explore" class="mob-nav-btn flex flex-col items-center gap-0.5 text-slate-400">
           <i data-lucide="compass" class="w-5 h-5"></i>
           <span class="text-[10px]">Explorar</span>
-        </button>
-        <button data-nav="options" class="mob-nav-btn flex flex-col items-center gap-0.5 text-slate-400">
-          <i data-lucide="layers" class="w-5 h-5"></i>
-          <span class="text-[10px]">Opciones</span>
         </button>
         <button data-nav="signals" class="mob-nav-btn relative flex flex-col items-center gap-0.5 text-slate-400">
           <i data-lucide="check-circle-2" class="w-5 h-5"></i>

@@ -15,6 +15,8 @@ let displayCurrency = "USD";
 let watchlistData = [];
 let signalsData = [];
 let chatData = [];
+let btgPositionsData = [];
+let monitorsData = [];
 let marketCatalog = [];
 let customSearchResults = [];
 let exploreMainFilter = "ALL";
@@ -174,7 +176,7 @@ async function callEngine(action, payload = {}) {
 
 window.switchSection = (secName) => {
   currentSection = secName;
-  const allSecs = ["dashboard", "explore", "options", "radar", "signals", "chat", "news", "orders", "leverage", "settings"];
+  const allSecs = ["dashboard", "btg", "explore", "options", "radar", "signals", "chat", "news", "orders", "leverage", "settings"];
   allSecs.forEach((s) => {
     const el = document.getElementById(`sec-${s}`);
     if (el) el.classList.toggle("hidden", s !== secName);
@@ -197,6 +199,7 @@ window.switchSection = (secName) => {
   document.getElementById("app-sidebar")?.classList.add("hidden");
   document.getElementById("sidebar-backdrop")?.classList.add("hidden");
 
+  if (secName === "btg") window.refreshBtgPortfolio();
   if (secName === "explore" && marketCatalog.length === 0) loadExploreCatalog();
   if (secName === "options" && optionsChainData.contracts.length === 0) window.loadOptionsChain("NVDA");
   if (secName === "news") window.loadMarketNews();
@@ -805,6 +808,200 @@ function renderSignals() {
   }
 }
 
+// Render BTG Pactual Portfolio & Scheduled Monitors
+function renderBtgPortfolio() {
+  const posListEl = document.getElementById("btg-positions-list");
+  const monListEl = document.getElementById("btg-monitors-list");
+  if (!posListEl || !monListEl) return;
+
+  const clpPositions = btgPositionsData.filter((p) => p.currency === "CLP");
+  const usdPositions = btgPositionsData.filter((p) => p.currency === "USD");
+
+  const totalClpVal = clpPositions.reduce((a, p) => a + Number(p.market_value || 0), 0);
+  const totalClpInv = clpPositions.reduce((a, p) => a + Number(p.invested_amount || 0), 0);
+  const totalClpPnl = totalClpVal - totalClpInv;
+  const totalClpPct = totalClpInv > 0 ? (totalClpPnl / totalClpInv) * 100 : 0;
+
+  const totalUsdVal = usdPositions.reduce((a, p) => a + Number(p.market_value || 0), 0);
+  const totalUsdInv = usdPositions.reduce((a, p) => a + Number(p.invested_amount || 0), 0);
+  const totalUsdPnl = totalUsdVal - totalUsdInv;
+  const totalUsdPct = totalUsdInv > 0 ? (totalUsdPnl / totalUsdInv) * 100 : 0;
+
+  document.getElementById("btg-total-clp").textContent = "CLP $" + Math.round(totalClpVal).toLocaleString("es-CL");
+  const clpPnlEl = document.getElementById("btg-pnl-clp");
+  if (clpPositions.length > 0) {
+    clpPnlEl.textContent = `${totalClpPnl >= 0 ? "+" : ""}CLP $${Math.round(totalClpPnl).toLocaleString("es-CL")} (${totalClpPct >= 0 ? "+" : ""}${totalClpPct.toFixed(2)}%)`;
+    clpPnlEl.className = `text-xs font-medium mt-1 ${totalClpPnl >= 0 ? "text-zesty-green-500" : "text-zesty-red-500"}`;
+  } else {
+    clpPnlEl.textContent = "Sin posiciones en CLP";
+    clpPnlEl.className = "text-xs text-slate-500 mt-1";
+  }
+
+  document.getElementById("btg-total-usd").textContent =
+    "US $" + totalUsdVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const usdPnlEl = document.getElementById("btg-pnl-usd");
+  if (usdPositions.length > 0) {
+    usdPnlEl.textContent = `${totalUsdPnl >= 0 ? "+" : ""}US $${totalUsdPnl.toFixed(2)} (${totalUsdPct >= 0 ? "+" : ""}${totalUsdPct.toFixed(2)}%)`;
+    usdPnlEl.className = `text-xs font-medium mt-1 ${totalUsdPnl >= 0 ? "text-zesty-green-500" : "text-zesty-red-500"}`;
+  } else {
+    usdPnlEl.textContent = "Sin posiciones en USD";
+    usdPnlEl.className = "text-xs text-slate-500 mt-1";
+  }
+
+  if (btgPositionsData.length === 0) {
+    posListEl.innerHTML = `
+      <div class="p-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-2">
+        <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Aún no has cargado acciones en Inversiones BTG</p>
+        <p class="text-xs text-slate-500 max-w-md mx-auto">
+          Sube una captura de pantalla de tu app de BTG Pactual con el botón <b>Subir foto / captura BTG</b>, envíala por <b>@dfbe00_inversiones2_bot</b> en Telegram o agrégala manualmente.
+        </p>
+      </div>`;
+  } else {
+    posListEl.innerHTML = btgPositionsData
+      .map((p) => {
+        const pnlPct = Number(p.pnl_pct || 0);
+        const pnlAmt = Number(p.pnl_amount || 0);
+        const isUp = pnlPct >= 0;
+        const currPrefix = p.currency === "CLP" ? "CLP $" : "US $";
+        const fmtVal = (v) =>
+          p.currency === "CLP"
+            ? Math.round(Number(v || 0)).toLocaleString("es-CL")
+            : Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        return `
+        <div class="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${p.name}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500">${p.symbol}</span>
+            </div>
+            <p class="text-xs text-slate-500">
+              Cant: ${p.qty} · Compra: ${currPrefix}${fmtVal(p.avg_buy_price)} · Actual: <b class="text-slate-700 dark:text-slate-200">${currPrefix}${fmtVal(p.current_price)}</b>
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between sm:justify-end gap-3">
+            <div class="text-right">
+              <p class="text-sm font-bold text-slate-900 dark:text-slate-100">${currPrefix}${fmtVal(p.market_value)}</p>
+              <p class="text-xs font-medium ${isUp ? "text-zesty-green-500" : "text-zesty-red-500"}">
+                ${isUp ? "+" : ""}${pnlPct.toFixed(2)}% (${isUp ? "+" : ""}${currPrefix}${fmtVal(pnlAmt)})
+              </p>
+            </div>
+            <div class="flex gap-1.5">
+              ${
+                pnlPct < 0
+                  ? `<button
+                      onclick="window.createBreakEvenMonitor('${p.symbol}', '${p.name}')"
+                      title="Avisar por Telegram cuando llegue a 0%"
+                      class="px-3 py-1.5 rounded-lg border border-zesty-purple-300 dark:border-zesty-purple-700 text-zesty-purple-600 dark:text-zesty-purple-300 text-xs font-medium"
+                    >
+                      Avisar en 0%
+                    </button>`
+                  : ""
+              }
+              <button
+                onclick="window.deleteBtgPosition('${p.id}')"
+                title="Eliminar"
+                class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-zesty-red-500 text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>`;
+      })
+      .join("");
+  }
+
+  if (monitorsData.length === 0) {
+    monListEl.innerHTML = `<div class="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-500">No hay alertas programadas activas.</div>`;
+  } else {
+    monListEl.innerHTML = monitorsData
+      .map((m) => {
+        const isActive = m.status === "ACTIVE";
+        return `
+        <div class="p-3.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-900 dark:text-slate-100">${m.symbol}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] border ${
+                isActive
+                  ? "border-zesty-purple-300 text-zesty-purple-600 dark:text-zesty-purple-300"
+                  : "border-emerald-300 text-zesty-green-500"
+              }">${isActive ? "Vigilando (9:30, 13:00, 18:30)" : "Cumplida y enviada"}</span>
+            </div>
+            <p class="text-slate-500 mt-0.5">${m.description}</p>
+          </div>
+          <button
+            onclick="window.deleteMonitor('${m.id}')"
+            class="px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-zesty-red-500"
+          >
+            ✕
+          </button>
+        </div>`;
+      })
+      .join("");
+  }
+}
+
+window.refreshBtgPortfolio = async () => {
+  try {
+    showToast("Actualizando precios de Inversiones BTG y verificando alertas...");
+    await callEngine("refresh_btg");
+    await loadDatabaseData();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, "rose");
+  }
+};
+
+window.createBreakEvenMonitor = async (symbol, name) => {
+  const { error } = await supabase.from("scheduled_monitors").insert({
+    portfolio: "btg",
+    symbol,
+    condition_type: "pnl_pct_gte",
+    target_value: 0,
+    description: `Avisar por Telegram cuando ${name} (${symbol}) llegue a 0% de rendimiento y deje de ser negativa`,
+    status: "ACTIVE",
+  });
+  if (error) showToast(`Error: ${error.message}`, "rose");
+  else {
+    showToast(`Alerta creada: Te avisaremos por Telegram cuando ${symbol} llegue a 0%.`);
+    await loadDatabaseData();
+  }
+};
+
+window.deleteBtgPosition = async (id) => {
+  await supabase.from("btg_positions").delete().eq("id", id);
+  await loadDatabaseData();
+};
+
+window.deleteMonitor = async (id) => {
+  await supabase.from("scheduled_monitors").delete().eq("id", id);
+  await loadDatabaseData();
+};
+
+async function handleBtgPhotoUpload(file, caption = "") {
+  if (!file) return;
+  showToast("Analizando captura de BTG con Gemini Vision y agregando acción...");
+  const reader = new FileReader();
+  reader.onloadend = async () => {
+    try {
+      const base64 = String(reader.result || "").split(",")[1];
+      const res = await callEngine("parse_btg_image", {
+        image_base64: base64,
+        image_mime: file.type || "image/jpeg",
+        caption,
+      });
+      await loadDatabaseData();
+      window.switchSection("btg");
+      showToast(res.reply || "Acción agregada al portafolio BTG.");
+    } catch (err) {
+      showToast(`Error procesando imagen: ${err.message}`, "rose");
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
 // Watchlist (20D Channels)
 function renderWatchlist() {
   const container = document.getElementById("watchlist-cards");
@@ -1012,16 +1209,20 @@ window.stopVoiceCapture = () => {
 async function loadDatabaseData() {
   const prevPendingIds = new Set(signalsData.filter((s) => s.status === "PENDING_CONFIRMATION").map((s) => s.id));
 
-  const [{ data: wl }, { data: sigs }, { data: chats }, { data: cfg }] = await Promise.all([
+  const [{ data: wl }, { data: sigs }, { data: chats }, { data: cfg }, { data: btgPos }, { data: mons }] = await Promise.all([
     supabase.from("watchlist").select("*").order("category").order("symbol"),
     supabase.from("trade_signals").select("*").order("created_at", { ascending: false }).limit(30),
     supabase.from("chat_messages").select("*").order("created_at", { ascending: true }).limit(50),
     supabase.from("strategy_config").select("*").eq("id", 1).maybeSingle(),
+    supabase.from("btg_positions").select("*").order("symbol"),
+    supabase.from("scheduled_monitors").select("*").order("created_at", { ascending: false }),
   ]);
 
   watchlistData = wl || [];
   signalsData = sigs || [];
   chatData = chats || [];
+  btgPositionsData = btgPos || [];
+  monitorsData = mons || [];
 
   for (const s of signalsData) {
     if (s.status === "PENDING_CONFIRMATION" && prevPendingIds.size > 0 && !prevPendingIds.has(s.id)) {
@@ -1046,6 +1247,7 @@ async function loadDatabaseData() {
 
   renderSignals();
   renderWatchlist();
+  renderBtgPortfolio();
   renderChat();
 }
 
@@ -1136,7 +1338,16 @@ function setupRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "watchlist" }, () => loadDatabaseData())
     .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, () => loadDatabaseData())
     .on("postgres_changes", { event: "*", schema: "public", table: "strategy_config" }, () => loadDatabaseData())
+    .on("postgres_changes", { event: "*", schema: "public", table: "btg_positions" }, () => loadDatabaseData())
+    .on("postgres_changes", { event: "*", schema: "public", table: "scheduled_monitors" }, () => loadDatabaseData())
     .subscribe();
+
+  // Auto-refresh BTG live prices every 60 seconds while logged in
+  setInterval(() => {
+    if (btgPositionsData.length > 0) {
+      callEngine("refresh_btg").catch(() => {});
+    }
+  }, 60000);
 }
 
 async function initAuthenticatedApp() {
@@ -1313,6 +1524,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("mic-btn")?.addEventListener("click", toggleVoiceCapture);
+  document.getElementById("btg-photo-input")?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) handleBtgPhotoUpload(file, "");
+    e.target.value = "";
+  });
+  document.getElementById("chat-photo-input")?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    const caption = document.getElementById("chat-input")?.value.trim() || "";
+    if (file) handleBtgPhotoUpload(file, caption);
+    e.target.value = "";
+  });
+  document.getElementById("btg-manual-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const symbol = document.getElementById("btg-sym").value.trim().toUpperCase();
+      const name = document.getElementById("btg-name").value.trim() || symbol;
+      const currency = document.getElementById("btg-curr").value;
+      const qty = Number(document.getElementById("btg-qty").value);
+      const avg_buy_price = Number(document.getElementById("btg-buy-price").value);
+      await callEngine("upsert_btg_position", {
+        symbol,
+        name,
+        market: currency === "CLP" ? "CL" : "US",
+        currency,
+        qty,
+        avg_buy_price,
+      });
+      document.getElementById("btg-manual-form").reset();
+      document.getElementById("btg-manual-form").classList.add("hidden");
+      await loadDatabaseData();
+      showToast("Acción guardada en Inversiones BTG.");
+    } catch (err) {
+      showToast(`Error: ${err.message}`, "rose");
+    }
+  });
   document.getElementById("tts-toggle-btn")?.addEventListener("click", () => {
     ttsEnabled = !ttsEnabled;
     const lbl = document.getElementById("tts-status-label");

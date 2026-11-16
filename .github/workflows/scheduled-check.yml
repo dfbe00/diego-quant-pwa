@@ -1,0 +1,31 @@
+name: Revisión Automática Portafolio BTG y Alpaca (3x/Día)
+
+on:
+  schedule:
+    # 9:30 AM Hora de Chile (UTC-3 -> 12:30 UTC)
+    - cron: '30 12 * * *'
+    # 1:00 PM Hora de Chile (UTC-3 -> 16:00 UTC)
+    - cron: '0 16 * * *'
+    # 6:30 PM Hora de Chile (UTC-3 -> 21:30 UTC)
+    - cron: '30 21 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-monitors-and-signals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ejecutar revisión de Inversiones BTG, Monitores y Canales Alpaca
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            "https://ytzvufrmenpqjelkbthm.supabase.co/functions/v1/trading-engine?cron=check_all")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Resultado de revisión: $body"
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error HTTP $http_code"
+            exit 1
+          fi
