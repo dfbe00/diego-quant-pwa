@@ -3,524 +3,1091 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Diego Quant · Inversiones AI</title>
+  <title>Zesty Quant AI · Inversiones &amp; Trading Algorítmico</title>
 
-  <!-- iOS PWA Meta Tags -->
+  <!-- iOS & Desktop PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="DiegoQuant" />
-  <meta name="theme-color" content="#090D16" />
+  <meta name="apple-mobile-web-app-title" content="ZestyQuant" />
+  <meta name="theme-color" content="#3B0764" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <link rel="apple-touch-icon" href="./icon.svg" />
 
-  <!-- Tailwind CSS & Lucide Icons -->
+  <!-- Tailwind CSS configured with exact Zesty palette -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'custom-background': 'var(--bg-custom)',
+            'custom-foreground': 'var(--fg-custom)',
+            'zesty-purple': {
+              DEFAULT: '#7C3AED',
+              50: '#F5F3FF',
+              100: '#EDE9FE',
+              200: '#DDD6FE',
+              300: '#C4B5FD',
+              400: '#A78BFA',
+              500: '#8B5CF6',
+              600: '#7C3AED',
+              700: '#6D28D9',
+              800: '#5B21B6',
+              900: '#4C1D95',
+              950: '#2E1065',
+            },
+            'zesty-green': {
+              400: '#34D399',
+              500: '#10B981',
+              600: '#059669',
+            },
+            'zesty-red': {
+              400: '#F87171',
+              500: '#EF4444',
+              600: '#DC2626',
+            }
+          }
+        }
+      }
+    };
+  </script>
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
     :root {
+      --bg-custom: #F8FAFC;
+      --fg-custom: #0F172A;
       --sat: env(safe-area-inset-top, 0px);
       --sab: env(safe-area-inset-bottom, 0px);
+    }
+    html.dark {
+      --bg-custom: #0B0F19;
+      --fg-custom: #F8FAFC;
     }
     * {
       -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
     }
     body {
-      background-color: #090D16;
-      color: #F8FAFC;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
+      background-color: var(--bg-custom);
+      color: var(--fg-custom);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", "Segoe UI", Roboto, sans-serif;
       overscroll-behavior-y: none;
-      padding-top: var(--sat);
-      padding-bottom: calc(82px + var(--sab));
-      min-height: 100dvh;
     }
-    .ios-glass {
-      background: rgba(15, 23, 42, 0.82);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
     }
-    .ios-card {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.88));
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 20px;
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
-    .ios-bottom-nav {
-      padding-bottom: max(10px, var(--sab));
+    .border-l-5 {
+      border-left-width: 5px;
     }
-    ::-webkit-scrollbar {
-      width: 0px;
-      background: transparent;
+    @keyframes micPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      50% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
     }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.45; }
-    }
-    .pulse-dot {
-      animation: pulseGlow 2s infinite ease-in-out;
+    .mic-recording {
+      animation: micPulse 1.4s infinite;
     }
   </style>
 </head>
-<body class="selection:bg-emerald-500 selection:text-white">
+<body class="antialiased bg-custom-background text-custom-foreground transition-colors duration-200">
 
-  <!-- AUTH LOGIN VIEW (Restricted to dfbe00@gmail.com) -->
-  <div id="auth-view" class="fixed inset-0 z-50 flex flex-col justify-center items-center px-6 bg-[#090D16]">
-    <div class="w-full max-w-sm ios-card p-7 shadow-2xl">
-      <div class="flex items-center justify-center mb-5">
-        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 flex items-center justify-center">
-          <img src="./icon.svg" alt="Logo" class="w-11 h-11 rounded-xl" />
-        </div>
+  <!-- AUTH LOGIN VIEW (Exclusive for dfbe00@gmail.com) -->
+  <div id="auth-view" class="fixed inset-0 z-50 flex flex-col justify-center items-center px-4 bg-gradient-to-br from-[#1E0B4B] via-[#0B0F19] to-[#111827] text-white">
+    <div class="w-full max-w-md rounded-2xl border border-zesty-purple-500/30 bg-slate-900/90 backdrop-blur-xl p-8 shadow-2xl">
+      <div class="flex justify-center mb-6">
+        <img src="./logo.svg" alt="Zesty Quant AI" class="h-12" />
       </div>
-      <h1 class="text-2xl font-bold text-center tracking-tight">Diego Quant AI</h1>
+      <h1 class="text-xl font-bold text-center">Bienvenido a tu Terminal Zesty Quant</h1>
       <p class="text-xs text-slate-400 text-center mt-1 mb-6">
-        Terminal Privada · Triple Canal 20D + RSI · Alpaca &amp; @Telegram
+        Acciones EEUU · ETFs · Opciones Nivel 3 · Renta Fija · Apalancamiento · Triple Canal 20D + RSI
       </p>
 
       <form id="login-form" class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Correo Propietario Autorizado</label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Correo Propietario Autorizado</label>
           <input
             id="login-email"
             type="email"
             value="dfbe00@gmail.com"
             required
-            class="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-white focus:outline-none focus:border-emerald-500"
+            class="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-zesty-purple-500"
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Contraseña</label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Contraseña</label>
           <input
             id="login-password"
             type="password"
             placeholder="••••••••••••"
             required
-            class="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-white focus:outline-none focus:border-emerald-500"
+            class="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-zesty-purple-500"
           />
         </div>
-        <div id="login-error" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3"></div>
+        <div id="login-error" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3"></div>
         <button
           id="login-btn"
           type="submit"
-          class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-semibold text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition"
+          class="w-full py-3.5 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white font-semibold text-sm shadow-lg shadow-zesty-purple-500/25 transition"
         >
-          Desbloquear Terminal Privada
+          Ingresar a Zesty Quant
         </button>
       </form>
 
-      <div class="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-center gap-2 text-[11px] text-slate-500">
-        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
-        <span>Acceso exclusivo bloqueado por RLS para dfbe00@gmail.com</span>
+      <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-center gap-2 text-xs text-slate-400">
+        <i data-lucide="lock" class="w-3.5 h-3.5 text-zesty-purple-400"></i>
+        <span>Acceso exclusivo protegido por Supabase RLS para dfbe00@gmail.com</span>
       </div>
     </div>
   </div>
 
-  <!-- MAIN APP SHELL -->
-  <div id="app-shell" class="hidden max-w-md mx-auto">
-    <!-- Sticky iOS Top Header -->
-    <header class="sticky top-0 z-30 ios-glass border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <img src="./icon.svg" alt="Icon" class="w-8 h-8 rounded-lg" />
-        <div>
-          <div class="flex items-center gap-1.5">
-            <span class="font-bold text-sm tracking-tight">Diego Quant</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-medium border border-emerald-500/30">
-              PA3XXQ6PL
+  <!-- MAIN APPLICATION SHELL (Zesty Web + Mobile Layout) -->
+  <main id="app-shell" class="hidden min-h-screen bg-custom-background text-custom-foreground">
+    <!-- Top Zesty Purple Gradient Navbar -->
+    <nav class="sticky top-0 z-50 py-2.5 px-4 h-14 bg-gradient-to-bl from-zesty-purple-950 via-zesty-purple-900 to-zesty-purple border-b border-zesty-purple-700/60 shadow-md">
+      <div class="flex items-center justify-between h-full">
+        <div class="flex items-center gap-3">
+          <button id="mobile-menu-btn" class="text-white sm:hidden p-1.5 rounded-lg hover:bg-white/10">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <a href="#dashboard" onclick="window.switchSection('dashboard'); return false;" class="flex items-center">
+            <img src="./logo.svg" alt="Zesty Quant" class="h-8 w-auto" />
+          </a>
+          <span class="hidden md:inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-white/10 text-purple-200 border border-white/15">
+            <span class="w-2 h-2 rounded-full bg-zesty-green-400 animate-pulse"></span>
+            Alpaca PA3XXQ6PL · Opciones Nivel 3 · Margen 2x
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Push Notifications Permission Button -->
+          <button
+            id="push-perm-btn"
+            title="Activar Notificaciones Push"
+            class="px-2.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition"
+          >
+            <i data-lucide="bell" class="w-3.5 h-3.5 text-purple-200"></i>
+            <span id="push-perm-label" class="hidden sm:inline">Activar Push</span>
+          </button>
+
+          <!-- Desktop App Download / Install Button -->
+          <button
+            id="desktop-install-btn"
+            title="Descargar App a mi Computador"
+            class="px-2.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 text-xs font-medium flex items-center gap-1.5 transition"
+          >
+            <i data-lucide="monitor-down" class="w-3.5 h-3.5"></i>
+            <span class="hidden md:inline">Descargar App PC</span>
+          </button>
+
+          <!-- Theme Light/Dark Toggle (Exact Zesty Sun/Moon button) -->
+          <button
+            id="theme-toggle-btn"
+            title="Cambiar tema Claro / Oscuro"
+            class="rounded-full p-2 text-white hover:bg-white/10 transition"
+          >
+            <i data-lucide="sun" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Mi Cuenta Pill -->
+          <button
+            onclick="window.switchSection('settings')"
+            class="px-3.5 py-1.5 bg-zesty-purple-700 hover:bg-zesty-purple-500 text-white text-xs font-semibold rounded-full flex items-center gap-1.5 shadow-sm transition"
+          >
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Mi cuenta</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Body Wrapper (Sidebar + Content) -->
+    <div class="flex fixed top-14 left-0 w-full h-[calc(100dvh-3.5rem)] bg-custom-background text-custom-foreground">
+      <!-- Mobile Drawer Backdrop -->
+      <div id="sidebar-backdrop" class="hidden fixed inset-0 bg-black/50 z-40 sm:hidden"></div>
+
+      <!-- Zesty Left Sidebar (Fixed on Desktop, Drawer on Mobile) -->
+      <aside
+        id="app-sidebar"
+        class="hidden sm:flex flex-col w-64 py-4 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E1322] fixed sm:relative left-0 h-[calc(100dvh-3.5rem)] z-50 sm:z-auto select-none overflow-y-auto"
+      >
+        <div class="flex flex-col gap-3 flex-1">
+          <!-- Main Navigation -->
+          <div>
+            <div class="font-semibold px-4 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">Principal</div>
+            <ul class="flex flex-col text-xs mt-1.5 space-y-0.5">
+              <li>
+                <a href="#dashboard" data-nav="dashboard" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-zesty-purple-500 bg-zesty-purple-50 dark:bg-zesty-purple-950/30 text-zesty-purple-700 dark:text-purple-200">
+                  <i data-lucide="wallet" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Dashboard</span>
+                </a>
+              </li>
+              <li>
+                <a href="#explore" data-nav="explore" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="compass" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Explorar Mercado</span>
+                </a>
+              </li>
+              <li>
+                <a href="#options" data-nav="options" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="layers" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Opciones (Calls &amp; Puts)</span>
+                </a>
+              </li>
+              <li>
+                <a href="#radar" data-nav="radar" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="activity" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Triple Canal 20D + RSI</span>
+                </a>
+              </li>
+              <li>
+                <a href="#chat" data-nav="chat" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="bot" class="w-5 h-5 flex-shrink-0 text-zesty-purple-500"></i>
+                  <span class="ml-3">Asistente IA &amp; Voz</span>
+                </a>
+              </li>
+              <!-- Dynamic News Link (Toggled via Chat or Settings) -->
+              <li id="sidebar-news-item" class="hidden">
+                <a href="#news" data-nav="news" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="newspaper" class="w-5 h-5 flex-shrink-0 text-emerald-500"></i>
+                  <span class="ml-3">Noticias del Mercado</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Movimientos & Trading -->
+          <div>
+            <div class="font-semibold px-4 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">Operaciones</div>
+            <ul class="flex flex-col text-xs mt-1.5 space-y-0.5">
+              <li>
+                <a href="#signals" data-nav="signals" class="sidebar-link flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <div class="flex items-center">
+                    <i data-lucide="bell-ring" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="ml-3">Confirmaciones</span>
+                  </div>
+                  <span id="sidebar-signals-badge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-full bg-zesty-purple-500 text-white">0</span>
+                </a>
+              </li>
+              <li>
+                <a href="#orders" data-nav="orders" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="shopping-bag" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Órdenes &amp; Actividad</span>
+                </a>
+              </li>
+              <li>
+                <a href="#leverage" data-nav="leverage" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="trending-up" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Renta Fija &amp; Margen 2x</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Dynamic Custom Sections Added from Chat -->
+          <div id="sidebar-custom-wrapper" class="hidden">
+            <div class="font-semibold px-4 text-xs uppercase tracking-wider text-zesty-purple-500">Creado desde Chat IA</div>
+            <ul id="sidebar-custom-list" class="flex flex-col text-xs mt-1.5 space-y-0.5"></ul>
+          </div>
+
+          <!-- Mi Cuenta -->
+          <div>
+            <div class="font-semibold px-4 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">Mi cuenta</div>
+            <ul class="flex flex-col text-xs mt-1.5 space-y-0.5">
+              <li>
+                <a href="#settings" data-nav="settings" class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors border-l-5 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+                  <i data-lucide="sliders" class="w-5 h-5 flex-shrink-0"></i>
+                  <span class="ml-3">Ajustes &amp; Descarga PC</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="px-4 text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 pt-3 text-xs space-y-1">
+          <div class="font-semibold text-slate-700 dark:text-slate-300">Diego Francisco Bravo</div>
+          <div class="text-[11px] truncate">dfbe00@gmail.com · @dfbe00_inversiones2_bot</div>
+        </div>
+      </aside>
+
+      <!-- MAIN SCROLLABLE CONTENT AREA -->
+      <div id="main-content" class="flex-1 overflow-y-auto pb-24 sm:pb-10">
+        <!-- Toast Alert Banner -->
+        <div id="toast-banner" class="hidden mx-4 mt-4 p-3.5 rounded-xl text-xs font-medium border flex items-center justify-between shadow-lg"></div>
+
+        <!-- ========================================== -->
+        <!-- SECTION 1: ZESTY DASHBOARD                 -->
+        <!-- ========================================== -->
+        <section id="sec-dashboard" class="p-4 sm:p-6 max-w-6xl mx-auto space-y-4">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-1">
+              <h1 class="text-2xl font-bold">Dashboard</h1>
+              <span class="text-sm text-slate-500 dark:text-slate-400">
+                Rastrea tu portafolio en Alpaca y gestiona tus señales del Triple Canal 20D + RSI
+              </span>
+            </div>
+
+            <!-- Currency Switcher (Exact Zesty USD / CLP Toggle) -->
+            <div class="flex w-full rounded-xl bg-slate-200 p-1 sm:w-auto dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700">
+              <button
+                id="curr-usd-btn"
+                type="button"
+                class="flex-1 rounded-lg px-5 py-2 text-sm font-semibold transition-colors sm:flex-none bg-white text-zesty-purple-600 shadow-sm dark:bg-slate-700 dark:text-zesty-purple-300"
+              >
+                🇺🇸 Dólares
+              </button>
+              <button
+                id="curr-clp-btn"
+                type="button"
+                class="flex-1 rounded-lg px-5 py-2 text-sm font-medium transition-colors sm:flex-none text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                🇨🇱 Pesos
+              </button>
+            </div>
+          </div>
+
+          <!-- Pending Confirmations Alert Card -->
+          <div id="dashboard-pending-banner" class="hidden rounded-xl p-4 border border-zesty-purple-400/50 bg-gradient-to-r from-zesty-purple-500/15 to-emerald-500/10"></div>
+
+          <!-- Dynamic Custom Sections Injected by Chatbot -->
+          <div id="dashboard-custom-sections" class="space-y-4"></div>
+
+          <!-- Zesty Portfolio Card + #BB91FA Area Chart -->
+          <div id="card-portfolio-chart" class="flex flex-col gap-2 border rounded-xl p-4 sm:p-7 bg-zesty-purple-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold">Portafolio</h2>
+                <p id="portfolio-currency-label" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Saldo total en 🇺🇸 USD (Cuenta PA3XXQ6PL)</p>
+                <div id="portfolio-equity" class="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">US $100,000.69</div>
+                <div id="portfolio-day-change" class="flex items-center text-sm font-semibold text-zesty-green-500 mt-1">
+                  +$0.00 (0.00%) <span class="pl-1.5 text-slate-500 dark:text-slate-400 font-normal">Hoy</span>
+                </div>
+              </div>
+
+              <!-- Timeframe Pills (1D, 1M, 3M, 1A) -->
+              <div class="flex gap-1.5">
+                <button data-period="1D" class="period-btn rounded-xl px-3.5 py-1.5 text-xs font-semibold bg-zesty-purple-500 text-white shadow-xs">1D</button>
+                <button data-period="1M" class="period-btn rounded-xl px-3.5 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200">1M</button>
+                <button data-period="3M" class="period-btn rounded-xl px-3.5 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200">3M</button>
+                <button data-period="1A" class="period-btn rounded-xl px-3.5 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200">1A</button>
+              </div>
+            </div>
+
+            <!-- Recharts-style SVG Area Chart with exact #BB91FA Zesty Purple Gradient -->
+            <div class="w-full h-64 mt-3 relative">
+              <svg id="portfolio-svg-chart" viewBox="0 0 960 260" class="w-full h-full overflow-visible">
+                <defs>
+                  <linearGradient id="zestyChartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stop-color="#BB91FA" stop-opacity="0.75"></stop>
+                    <stop offset="95%" stop-color="#BB91FA" stop-opacity="0.0"></stop>
+                  </linearGradient>
+                </defs>
+                <path id="chart-area-path" fill="url(#zestyChartGrad)" d="M0,220 L960,220 L960,240 L0,240 Z"></path>
+                <path id="chart-line-path" fill="none" stroke="#BB91FA" stroke-width="3" stroke-linecap="round" d="M0,220 L960,220"></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Zesty Poder de Compra Card -->
+          <div id="card-buying-power" class="flex flex-col gap-3 border rounded-xl p-4 sm:p-7 bg-zesty-purple-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+            <h2 class="text-base sm:text-lg font-bold">Poder de compra y márgenes habilitados</h2>
+            <div class="flex justify-between flex-col md:flex-row gap-4 md:items-center">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
+                <div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Efectivo disponible (Cash)</p>
+                  <p id="portfolio-cash" class="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">US $100,000.69</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Poder Compra (Margen 2x)</p>
+                  <p id="portfolio-bp" class="text-xl font-extrabold text-zesty-purple-600 dark:text-zesty-purple-400 mt-0.5">US $200,001.38</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Poder Opciones (Nivel 3)</p>
+                  <p id="portfolio-opt-bp" class="text-xl font-extrabold text-emerald-600 dark:text-zesty-green-400 mt-0.5">US $100,000.69</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Límite Regla 10% / Acción</p>
+                  <p id="portfolio-max-pos" class="text-xl font-extrabold text-amber-500 mt-0.5">US $10,000.07</p>
+                </div>
+              </div>
+              <div class="flex flex-row gap-2">
+                <button
+                  onclick="window.runScanNow()"
+                  class="rounded-xl inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold border border-zesty-purple-400 text-zesty-purple-600 dark:text-zesty-purple-300 hover:bg-zesty-purple-500/10 transition"
+                >
+                  <i data-lucide="radar" class="w-4 h-4"></i>
+                  <span>Escanear Triple Canal</span>
+                </button>
+                <button
+                  onclick="window.switchSection('explore')"
+                  class="rounded-xl inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white shadow-sm transition"
+                >
+                  <i data-lucide="compass" class="w-4 h-4"></i>
+                  <span>Explorar Mercado</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zesty Posiciones Card -->
+          <div id="card-positions" class="flex flex-col gap-2 border rounded-xl p-4 sm:p-7 bg-zesty-purple-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold">Posiciones</h2>
+                <span class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Aquí puedes ver tus posiciones activas en Alpaca con monitoreo de Stop-Loss (-7%)</span>
+              </div>
+              <span id="positions-count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-zesty-purple-500/15 text-zesty-purple-500">0 activas</span>
+            </div>
+            <div id="positions-list" class="mt-3"></div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 2: EXPLORAR MERCADO (ZESTY STYLE)  -->
+        <!-- ========================================== -->
+        <section id="sec-explore" class="hidden p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+          <div class="flex flex-col gap-1">
+            <h1 class="text-2xl font-bold">Explorar</h1>
+            <span class="text-sm text-slate-500 dark:text-slate-400">
+              Descubre todos los instrumentos habilitados en tu cuenta Alpaca: Acciones EEUU, ETFs, Opciones Nivel 3, Renta Fija, Apalancados 3x y Cripto
             </span>
           </div>
-          <p class="text-[11px] text-slate-400 leading-none mt-0.5">Triple Canal 20D + RSI · SL 7% · Máx 10%</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button
-          id="quick-scan-btn"
-          title="Escanear Mercado"
-          class="px-2.5 py-1.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-medium flex items-center gap-1 active:scale-95 transition"
-        >
-          <i data-lucide="radar" class="w-3.5 h-3.5"></i>
-          <span>Escanear</span>
-        </button>
-        <button
-          id="refresh-btn"
-          title="Actualizar"
-          class="p-2 rounded-xl bg-slate-800/80 text-slate-300 active:scale-95 transition"
-        >
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </header>
 
-    <!-- Status Toast -->
-    <div id="toast-banner" class="hidden mx-4 mt-3 p-3 rounded-xl text-xs font-medium border flex items-center justify-between"></div>
+          <!-- Zesty Search Box -->
+          <form id="explore-search-form" class="relative">
+            <input
+              id="explore-search-input"
+              type="search"
+              placeholder="Buscar cualquier ticker habilitado en Alpaca (ej. NVDA, SPY, TLT, SOXL, IONQ, PLTR, KO, DIS)..."
+              class="w-full pl-11 pr-28 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-zesty-purple-500 shadow-sm"
+            />
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-3.5"></i>
+            <button
+              type="submit"
+              class="absolute right-2 top-1.5 px-4 py-1.5 rounded-lg bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white text-xs font-semibold"
+            >
+              Buscar Alpaca
+            </button>
+          </form>
 
-    <!-- TAB 1: PORTAFOLIO (ALPACA LIVE) -->
-    <main id="tab-portfolio" class="px-4 pt-4 space-y-4">
-      <!-- Hero Equity Card -->
-      <div class="ios-card p-5 relative overflow-hidden">
-        <div class="flex items-center justify-between mb-1">
-          <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
-            Valor del Portafolio (Alpaca Paper)
-          </span>
-          <span id="account-status-badge" class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
-            ACTIVE
-          </span>
-        </div>
-        <div id="portfolio-equity" class="text-3xl font-extrabold tracking-tight mt-1">$100,000.69</div>
-        <div id="portfolio-day-change" class="text-xs font-medium text-emerald-400 mt-1">
-          +$0.00 (0.00%) hoy
-        </div>
-
-        <!-- Mini Metrics Grid -->
-        <div class="grid grid-cols-3 gap-2.5 mt-4 pt-4 border-t border-slate-800/80">
-          <div>
-            <div class="text-[10px] text-slate-400">Efectivo (Cash)</div>
-            <div id="portfolio-cash" class="text-sm font-bold text-white mt-0.5">$100,000</div>
+          <!-- Primary Asset Class Filter Pills (Exact Zesty rounded-full pills) -->
+          <div class="flex flex-wrap gap-2">
+            <button data-filter="ALL" class="explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-semibold transition-all border border-zesty-purple-500 bg-zesty-purple-500 text-white">
+              Todos (Habilitados Alpaca)
+            </button>
+            <button data-filter="Acciones EEUU" class="explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/70 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300">
+              🇺🇸 Acciones EEUU
+            </button>
+            <button data-filter="ETFs" class="explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/70 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300">
+              📊 ETFs &amp; S&amp;P 500
+            </button>
+            <button data-filter="Renta Fija" class="explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/70 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300">
+              🏛️ Renta Fija (Bonos &amp; Tesoro)
+            </button>
+            <button data-filter="Apalancados" class="explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/70 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300">
+              ⚡ ETFs Apalancados (3x / -3x)
+            </button>
+            <button data-filter="Cripto" class="explore-pill inline-flex items-center rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-all border border-zesty-purple-300 bg-zesty-purple-200/70 text-slate-700 dark:border-zesty-purple-800 dark:bg-zesty-purple-900/20 dark:text-slate-300">
+              ₿ Cripto 24/7
+            </button>
           </div>
-          <div>
-            <div class="text-[10px] text-slate-400">Poder Compra</div>
-            <div id="portfolio-bp" class="text-sm font-bold text-blue-400 mt-0.5">$200,001</div>
+
+          <!-- Zesty "Más categorías" Horizontal Multi-Row Carousel -->
+          <div class="flex flex-col gap-3 bg-zesty-purple-200/50 dark:bg-slate-800/80 rounded-xl p-4 sm:p-6 border border-zesty-purple-300/40 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base sm:text-lg font-bold">Explorar por Categorías Temáticas</h2>
+              <span class="text-xs text-slate-500 dark:text-slate-400">Toca cualquier categoría o activo para operar Acciones u Opciones</span>
+            </div>
+            <div class="flex flex-col gap-2.5 overflow-x-auto hide-scrollbar">
+              <div class="flex flex-row flex-nowrap gap-2.5 w-max">
+                <button onclick="window.filterSubCategory('ALL')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Ver Todas</button>
+                <button onclick="window.filterSubCategory('7 Magníficas & IA')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">7 Magníficas &amp; IA</button>
+                <button onclick="window.filterSubCategory('Renta Fija & Bonos del Tesoro')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Bajo Riesgo / Bonos del Tesoro</button>
+                <button onclick="window.filterSubCategory('ETFs Apalancados & Inversos (3x)')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">ETFs Apalancados 3x &amp; Inversos</button>
+                <button onclick="window.filterSubCategory('Computación Cuántica')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Computación Cuántica</button>
+                <button onclick="window.filterSubCategory('ETFs S&P 500 & Índices')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">ETFs S&amp;P 500 &amp; Índices</button>
+              </div>
+              <div class="flex flex-row flex-nowrap gap-2.5 w-max">
+                <button onclick="window.filterSubCategory('Inteligencia Artificial')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Inteligencia Artificial &amp; Semis</button>
+                <button onclick="window.filterSubCategory('Materias Primas & Commodities')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Materias Primas (Oro, Plata, Petróleo)</button>
+                <button onclick="window.filterSubCategory('Renta Fija & Bonos Corporativos')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Deuda Corporativa &amp; High Yield</button>
+                <button onclick="window.filterSubCategory('Fintech & Populares')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Fintech &amp; Más Transados</button>
+                <button onclick="window.filterSubCategory('Criptomonedas Alpaca 24/7')" class="subcat-chip rounded-full px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm hover:scale-105 transition">Bitcoin / Ethereum / Solana</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <div class="text-[10px] text-slate-400">Máx por Acción (10%)</div>
-            <div id="portfolio-max-pos" class="text-sm font-bold text-amber-400 mt-0.5">$10,000</div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Pending Confirmation Alert Banner (if any) -->
-      <div id="home-pending-alert" class="hidden ios-card p-4 border-amber-500/40 bg-amber-500/10"></div>
+          <!-- Market Sections Container (Renders Zesty-style asset rows grouped by section) -->
+          <div id="explore-sections-container" class="space-y-8"></div>
+        </section>
 
-      <!-- Strategy Guardrails Banner -->
-      <div class="ios-card p-4">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Reglas Activas del Algoritmo</h2>
-          <span class="text-[11px] text-emerald-400 font-medium">Riesgo Moderado</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
-            <div class="text-slate-400 text-[11px]">Canales (20 Días)</div>
-            <div class="font-semibold text-white mt-0.5">Donchian + Bollinger + Keltner</div>
-          </div>
-          <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
-            <div class="text-slate-400 text-[11px]">Validación &amp; Riesgo</div>
-            <div class="font-semibold text-white mt-0.5">RSI(14) · SL -7% · Cap 10%</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Open Positions Section -->
-      <div>
-        <div class="flex items-center justify-between mb-2.5">
-          <h2 class="text-sm font-bold text-white">Posiciones Abiertas en Alpaca</h2>
-          <span id="positions-count" class="text-xs text-slate-400">0 activas</span>
-        </div>
-        <div id="positions-list" class="space-y-2.5"></div>
-      </div>
-
-      <!-- Recent Alpaca Orders -->
-      <div>
-        <div class="flex items-center justify-between mb-2.5">
-          <h2 class="text-sm font-bold text-white">Órdenes Recientes en Alpaca</h2>
-        </div>
-        <div id="orders-list" class="space-y-2"></div>
-      </div>
-    </main>
-
-    <!-- TAB 2: SEÑALES & CONFIRMACIONES -->
-    <main id="tab-signals" class="hidden px-4 pt-4 space-y-4">
-      <div class="ios-card p-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-base font-bold">Centro de Confirmación</h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Ninguna orden se ejecuta en Alpaca sin tu confirmación en @Telegram o aquí.
-            </p>
-          </div>
-          <button
-            id="new-proposal-toggle-btn"
-            class="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold"
-          >
-            + Propuesta
-          </button>
-        </div>
-
-        <!-- Manual / AI Trade Proposal Form -->
-        <form id="proposal-form" class="hidden mt-4 pt-4 border-t border-slate-800 space-y-3">
-          <div class="grid grid-cols-3 gap-2">
+        <!-- ========================================== -->
+        <!-- SECTION 3: OPCIONES NIVEL 3 (CALLS & PUTS) -->
+        <!-- ========================================== -->
+        <section id="sec-options" class="hidden p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <label class="text-[11px] text-slate-400">Ticker</label>
+              <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold">Laboratorio de Opciones (Calls &amp; Puts)</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-zesty-purple-500/20 text-zesty-purple-400 border border-zesty-purple-500/30">
+                  Alpaca Nivel 3 Habilitado
+                </span>
+              </div>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Explora cadenas de opciones reales de Alpaca y practica estrategias alcistas, bajistas o de cobertura con explicación sencilla.
+              </p>
+            </div>
+          </div>
+
+          <!-- Educational Strategy Cards (Plain Language) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60">
+              <div class="flex items-center gap-2 text-emerald-500 font-bold text-sm">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                <span>Long Call (Apuesta Alcista)</span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                <b>💡 En simple:</b> Pagas una prima pequeña para reservar el derecho a comprar 100 acciones a un precio fijo (*Strike*). Si la acción sube fuerte, multiplicas tu ganancia; si baja, tu pérdida máxima es solo lo que costó el contrato.
+              </p>
+            </div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60">
+              <div class="flex items-center gap-2 text-rose-500 font-bold text-sm">
+                <i data-lucide="trending-down" class="w-4 h-4"></i>
+                <span>Long Put (Seguro / Apuesta Bajista)</span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                <b>💡 En simple:</b> Funciona como un seguro contra caídas. Ganas dinero cuando la acción cae por debajo del precio *Strike*, o protege tus acciones actuales si el mercado se desploma.
+              </p>
+            </div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60">
+              <div class="flex items-center gap-2 text-zesty-purple-400 font-bold text-sm">
+                <i data-lucide="shield" class="w-4 h-4"></i>
+                <span>Regla de Contratos (x100)</span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                <b>💡 En simple:</b> Cada 1 contrato de opción representa <b>100 acciones</b>. Si la prima dice <b>$2.50</b>, el costo total de 1 contrato es <b>$250 USD</b> ($2.50 × 100).
+              </p>
+            </div>
+          </div>
+
+          <!-- Options Chain Controls -->
+          <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-zesty-purple-50/60 dark:bg-slate-900/60 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500">Subyacente:</span>
+              <button onclick="window.loadOptionsChain('NVDA')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-zesty-purple-500 text-white text-xs font-bold">NVDA</button>
+              <button onclick="window.loadOptionsChain('SPY')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">SPY</button>
+              <button onclick="window.loadOptionsChain('AAPL')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">AAPL</button>
+              <button onclick="window.loadOptionsChain('TSLA')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">TSLA</button>
+              <button onclick="window.loadOptionsChain('QQQ')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">QQQ</button>
+              <button onclick="window.loadOptionsChain('GLD')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">GLD</button>
+              <button onclick="window.loadOptionsChain('TLT')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">TLT</button>
+              <button onclick="window.loadOptionsChain('SOXL')" class="opt-sym-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold">SOXL</button>
               <input
-                id="prop-symbol"
+                id="opt-custom-symbol"
                 type="text"
-                placeholder="NVDA"
-                required
-                class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs uppercase text-white"
+                placeholder="Otro (ej. AMD)"
+                class="w-28 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs uppercase"
               />
-            </div>
-            <div>
-              <label class="text-[11px] text-slate-400">Operación</label>
-              <select
-                id="prop-side"
-                class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+              <button
+                onclick="window.loadOptionsChain(document.getElementById('opt-custom-symbol').value || 'NVDA')"
+                class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-semibold"
               >
-                <option value="buy">COMPRA (BUY)</option>
-                <option value="sell">VENTA (SELL)</option>
-              </select>
+                Cargar Cadena
+              </button>
             </div>
-            <div>
-              <label class="text-[11px] text-slate-400">Cant. (Opcional)</label>
-              <input
-                id="prop-qty"
-                type="number"
-                step="0.01"
-                placeholder="Auto ≤10%"
-                class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
-              />
+
+            <div class="flex gap-1.5">
+              <button onclick="window.filterOptionsType('ALL')" class="opt-type-btn px-3 py-1.5 rounded-lg bg-zesty-purple-500 text-white text-xs font-bold">Calls &amp; Puts</button>
+              <button onclick="window.filterOptionsType('call')" class="opt-type-btn px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-bold">Solo CALLS 📈</button>
+              <button onclick="window.filterOptionsType('put')" class="opt-type-btn px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-bold">Solo PUTS 📉</button>
             </div>
           </div>
-          <button
-            type="submit"
-            class="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs"
-          >
-            Generar Señal con Análisis Gemini y Enviar a @Telegram
-          </button>
-        </form>
-      </div>
 
-      <div>
-        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
-          Pendientes de tu Confirmación
-        </h3>
-        <div id="pending-signals-list" class="space-y-3"></div>
-      </div>
+          <div id="options-underlying-banner" class="text-sm font-bold text-zesty-purple-500"></div>
+          <div id="options-chain-list" class="space-y-2.5"></div>
+        </section>
 
-      <div>
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-          Historial de Señales y Ejecuciones
-        </h3>
-        <div id="history-signals-list" class="space-y-2.5"></div>
-      </div>
-    </main>
+        <!-- ========================================== -->
+        <!-- SECTION 4: RADAR TRIPLE CANAL 20D + RSI    -->
+        <!-- ========================================== -->
+        <section id="sec-radar" class="hidden p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-2xl font-bold">Radar Triple Canal (20 Días) + RSI</h1>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Promedio de Bandas de Donchian (20D), Bollinger (20D, 2σ) y Keltner (20D) validado con RSI(14) · Stop-Loss 7% · Máx 10%
+              </p>
+            </div>
+            <button
+              onclick="window.runScanNow()"
+              class="px-5 py-2.5 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white font-bold text-xs shadow-md flex items-center gap-2 w-fit"
+            >
+              <i data-lucide="radar" class="w-4 h-4"></i>
+              <span>Escanear Ahora y Enviar Señales a @Telegram</span>
+            </button>
+          </div>
 
-    <!-- TAB 3: RADAR TRIPLE CANAL 20D + RSI -->
-    <main id="tab-radar" class="hidden px-4 pt-4 space-y-4">
-      <div class="ios-card p-4">
-        <div class="flex items-center justify-between mb-3">
+          <!-- Add New Watchlist Ticker -->
+          <form id="add-watchlist-form" class="flex flex-wrap gap-2 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
+            <input
+              id="add-symbol-input"
+              type="text"
+              placeholder="Agregar ticker al monitoreo automático (ej. AMD, TLT, SOXL, IONQ)"
+              required
+              class="flex-1 min-w-[200px] px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs uppercase"
+            />
+            <select
+              id="add-category-input"
+              class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+            >
+              <option value="Big Tech & AI">Big Tech &amp; AI</option>
+              <option value="Índices & ETFs">Índices &amp; ETFs</option>
+              <option value="Commodities">Commodities</option>
+              <option value="Renta Fija">Renta Fija</option>
+              <option value="Apalancados">Apalancados</option>
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-zesty-purple-500 text-white text-xs font-bold">
+              + Monitorear en Radar
+            </button>
+          </form>
+
+          <div id="watchlist-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 5: SEÑALES & CONFIRMACIONES        -->
+        <!-- ========================================== -->
+        <section id="sec-signals" class="hidden p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-2xl font-bold">Señales y Confirmaciones</h1>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Cada sugerencia incluye una <b>explicación en simple</b> (sin tecnicismos) y su <b>tesis cuantitativa</b>. Nada se compra ni vende sin tu confirmación.
+              </p>
+            </div>
+            <button
+              id="new-proposal-toggle-btn"
+              class="px-4 py-2.5 rounded-xl bg-zesty-purple-500 text-white text-xs font-bold w-fit"
+            >
+              + Crear Nueva Propuesta
+            </button>
+          </div>
+
+          <!-- Manual / Strategy Proposal Builder -->
+          <form id="proposal-form" class="hidden p-4 rounded-xl border border-zesty-purple-500/40 bg-zesty-purple-50/70 dark:bg-slate-900 space-y-3">
+            <h3 class="text-sm font-bold">Generar Propuesta con Análisis IA + Envío a @Telegram</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label class="text-slate-500">Ticker / Contrato</label>
+                <input id="prop-symbol" type="text" placeholder="NVDA, TLT, SOXL..." required class="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 uppercase" />
+              </div>
+              <div>
+                <label class="text-slate-500">Operación</label>
+                <select id="prop-side" class="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                  <option value="buy">COMPRA (BUY)</option>
+                  <option value="sell">VENTA / CORTO (SELL)</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-slate-500">Cantidad (Opcional)</label>
+                <input id="prop-qty" type="number" step="0.01" placeholder="Auto (≤10% cap)" class="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+              <div class="flex items-end">
+                <label class="flex items-center gap-2 cursor-pointer pb-2">
+                  <input id="prop-margin" type="checkbox" class="rounded text-zesty-purple-500" />
+                  <span>Usar Margen 2x</span>
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white font-bold text-xs">
+              Analizar con Gemini (Explicación Simple + Técnica) y Enviar para Confirmar
+            </button>
+          </form>
+
           <div>
-            <h2 class="text-base font-bold">Radar Triple Canal (20D) + RSI</h2>
-            <p class="text-xs text-slate-400">
-              Promedio de Donchian(20), Bollinger(20, 2σ) y Keltner(20) + RSI(14)
+            <h2 class="text-sm font-bold uppercase tracking-wider text-zesty-purple-500 mb-3">
+              ⚡ Pendientes de tu Confirmación (App o @Telegram)
+            </h2>
+            <div id="pending-signals-list" class="space-y-4"></div>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Historial de Señales Ejecutadas / Rechazadas
+            </h2>
+            <div id="history-signals-list" class="space-y-2.5"></div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 6: ASISTENTE IA (VOZ + APP BUILDER)-->
+        <!-- ========================================== -->
+        <section id="sec-chat" class="hidden p-4 sm:p-6 max-w-4xl mx-auto flex flex-col" style="height: calc(100dvh - 110px);">
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-zesty-purple-50/70 dark:bg-slate-900/70 mb-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-zesty-purple-500/20 border border-zesty-purple-500/40 flex items-center justify-center text-zesty-purple-400">
+                <i data-lucide="bot" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="text-sm font-bold flex items-center gap-2">
+                  <span>Asistente Zesty Quant AI (Voz 🎙️ + Constructor de App)</span>
+                </div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                  Háblale por micrófono, pídele comprar/vender o pídele <b>modificar la app en vivo</b> (ej. "agrega una sección de noticias").
+                </div>
+              </div>
+            </div>
+            <button
+              id="tts-toggle-btn"
+              title="Activar/Desactivar lectura por voz de las respuestas"
+              class="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-xs font-semibold flex items-center gap-1.5"
+            >
+              <i data-lucide="volume-2" class="w-4 h-4 text-zesty-purple-500"></i>
+              <span id="tts-status-label">Voz IA: OFF</span>
+            </button>
+          </div>
+
+          <!-- Quick Action & App-Modification Chips -->
+          <div class="flex gap-2 overflow-x-auto pb-2 mb-2 text-xs hide-scrollbar">
+            <button class="chat-chip px-3 py-1.5 rounded-full bg-zesty-purple-500/15 border border-zesty-purple-500/30 text-zesty-purple-600 dark:text-purple-300 font-medium whitespace-nowrap">
+              ➕ Agrega una nueva sección de noticias a la app
+            </button>
+            <button class="chat-chip px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 font-medium whitespace-nowrap">
+              ➕ Agrega una sección de Calculadora de Ganancias al Dashboard
+            </button>
+            <button class="chat-chip px-3 py-1.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+              💡 Explícame en simple qué recomiendas comprar hoy
+            </button>
+            <button class="chat-chip px-3 py-1.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+              🗑️ Elimina las secciones personalizadas
+            </button>
+          </div>
+
+          <!-- Messages Feed -->
+          <div id="chat-messages-box" class="flex-1 overflow-y-auto space-y-3 pr-1 pb-4"></div>
+
+          <!-- Voice Recording Status Banner -->
+          <div id="voice-status-banner" class="hidden mb-2 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center justify-between">
+            <span id="voice-status-text">🎙️ Escuchando tu voz... Habla ahora</span>
+            <button type="button" onclick="window.stopVoiceCapture()" class="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px]">Enviar Audio</button>
+          </div>
+
+          <!-- Chat Input Bar with Microphone -->
+          <form id="chat-form" class="mt-1 flex items-center gap-2">
+            <button
+              id="mic-btn"
+              type="button"
+              title="Hablar por micrófono con la IA"
+              class="p-3.5 rounded-2xl bg-slate-200 dark:bg-slate-800 hover:bg-zesty-purple-500/20 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition flex items-center justify-center"
+            >
+              <i data-lucide="mic" class="w-5 h-5"></i>
+            </button>
+            <input
+              id="chat-input"
+              type="text"
+              placeholder="Escribe o usa el micrófono 🎙️ (ej. 'agrega una sección de noticias' o 'compra NVDA')..."
+              class="flex-1 px-4 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-zesty-purple-500"
+            />
+            <button
+              id="chat-send-btn"
+              type="submit"
+              class="px-5 py-3.5 rounded-2xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md"
+            >
+              <span>Enviar</span>
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </form>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 7: NOTICIAS EN VIVO (DYNAMIC)      -->
+        <!-- ========================================== -->
+        <section id="sec-news" class="hidden p-4 sm:p-6 max-w-5xl mx-auto space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold">Noticias del Mercado en Vivo (Alpaca News)</h1>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Últimas noticias financieras de Wall Street en tiempo real para tus acciones, ETFs y opciones.
+              </p>
+            </div>
+            <button onclick="window.loadMarketNews()" class="px-3.5 py-2 rounded-xl bg-zesty-purple-500 text-white text-xs font-bold">
+              Actualizar Noticias
+            </button>
+          </div>
+          <div id="news-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 8: ÓRDENES & ACTIVIDAD ALPACA      -->
+        <!-- ========================================== -->
+        <section id="sec-orders" class="hidden p-4 sm:p-6 max-w-5xl mx-auto space-y-4">
+          <h1 class="text-2xl font-bold">Órdenes en Alpaca</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Historial en tiempo real de órdenes enviadas a tu cuenta PA3XXQ6PL.</p>
+          <div id="orders-list" class="space-y-2.5"></div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 9: RENTA FIJA & APALANCAMIENTO 2X  -->
+        <!-- ========================================== -->
+        <section id="sec-leverage" class="hidden p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+          <div>
+            <h1 class="text-2xl font-bold">Renta Fija &amp; Apalancamiento (Habilitados en Alpaca)</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Practica estrategias conservadoras con Bonos del Tesoro EEUU o estrategias agresivas con Margen 2x y ETFs 3x.
             </p>
           </div>
-          <button
-            id="radar-scan-btn"
-            class="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs shadow"
-          >
-            Escanear Ahora
-          </button>
-        </div>
 
-        <!-- Add Symbol Form -->
-        <form id="add-watchlist-form" class="flex gap-2">
-          <input
-            id="add-symbol-input"
-            type="text"
-            placeholder="Agregar ticker (ej. AMD, COST, XOM)"
-            required
-            class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs uppercase text-white"
-          />
-          <select
-            id="add-category-input"
-            class="px-2.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-300"
-          >
-            <option value="Big Tech & AI">Big Tech &amp; AI</option>
-            <option value="Índices & ETFs">Índices &amp; ETFs</option>
-            <option value="Commodities">Commodities</option>
-            <option value="Tendencia & AI">Tendencia</option>
-          </select>
-          <button
-            type="submit"
-            class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-emerald-400"
-          >
-            + Añadir
-          </button>
-        </form>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400">🏛️ Renta Fija (Bonos EEUU)</span>
+                <span class="text-xs text-emerald-400 font-semibold">Habilitado en Alpaca</span>
+              </div>
+              <h3 class="text-base font-bold">ETFs de Bonos del Tesoro y Deuda Corporativa</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <b>💡 En simple:</b> En lugar de dejar tu efectivo quieto, los ETFs de Renta Fija invierten en bonos del Gobierno de EE.UU. (Tesoro) o grandes empresas que pagan intereses mensuales:
+              </p>
+              <ul class="text-xs space-y-2 text-slate-600 dark:text-slate-300">
+                <li>• <b>SGOV / SHY (Corto Plazo 0-3 meses / 1-3 años):</b> Muy baja volatilidad, ideal para estacionar liquidez.</li>
+                <li>• <b>IEF / TLT (Bonos del Tesoro 7-10 y +20 años):</b> Suben fuerte cuando la Reserva Federal baja las tasas de interés.</li>
+                <li>• <b>BND / LQD / HYG (Bonos Corporativos):</b> Pagan mayor dividendo mensual predecible.</li>
+              </ul>
+              <button onclick="window.filterSubCategory('Renta Fija & Bonos del Tesoro'); window.switchSection('explore');" class="w-full py-2.5 rounded-xl bg-zesty-purple-500 text-white text-xs font-bold">
+                Ver y Operar Renta Fija en Explorar
+              </button>
+            </div>
 
-        <!-- Category Filter Pills -->
-        <div id="category-filters" class="flex gap-1.5 overflow-x-auto pt-3 pb-1 text-xs">
-          <button data-cat="ALL" class="cat-pill px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-semibold whitespace-nowrap">Todos</button>
-          <button data-cat="Big Tech & AI" class="cat-pill px-3 py-1 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">Big Tech &amp; AI</button>
-          <button data-cat="Índices & ETFs" class="cat-pill px-3 py-1 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">Índices &amp; ETFs</button>
-          <button data-cat="Commodities" class="cat-pill px-3 py-1 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">Commodities</button>
-          <button data-cat="Tendencia & AI" class="cat-pill px-3 py-1 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">Tendencia</button>
-        </div>
+            <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400">⚡ Apalancamiento 2x / 3x &amp; Cortos</span>
+                <span class="text-xs text-emerald-400 font-semibold">Margen 2x Activo ($200k)</span>
+              </div>
+              <h3 class="text-base font-bold">Margen 2x, Venta en Corto y ETFs 3x</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <b>💡 En simple:</b> Tu cuenta Alpaca tiene aprobado <b>Multiplicador 2x ($200,001 de poder de compra)</b> y <b>Shorting (Venta en Corto)</b>:
+              </p>
+              <ul class="text-xs space-y-2 text-slate-600 dark:text-slate-300">
+                <li>• <b>ETFs Bull 3x (SOXL, TQQQ, SPXL):</b> Si el índice sube 1%, el ETF sube ~3% (y viceversa).</li>
+                <li>• <b>ETFs Bear -3x (SOXS, SQQQ):</b> Suben ~3% cuando el mercado cae 1% (para ganar en caídas).</li>
+                <li>• <b>Stop-Loss Automático (-7%):</b> Esencial en activos apalancados para proteger tu capital.</li>
+              </ul>
+              <button onclick="window.filterSubCategory('ETFs Apalancados & Inversos (3x)'); window.switchSection('explore');" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold">
+                Ver y Operar ETFs Apalancados 3x
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 10: AJUSTES & DESCARGA ESCRITORIO  -->
+        <!-- ========================================== -->
+        <section id="sec-settings" class="hidden p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
+          <h1 class="text-2xl font-bold">Ajustes, Permisos y App de Escritorio</h1>
+
+          <!-- Desktop App & Mobile PWA Card -->
+          <div class="p-5 rounded-xl border border-zesty-purple-500/40 bg-zesty-purple-50/70 dark:bg-slate-900/70 space-y-3">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="monitor-smartphone" class="w-6 h-6 text-zesty-purple-500"></i>
+              <div>
+                <h2 class="text-base font-bold">Descargar App en tu Computador (Windows) y iPhone</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Además del acceso directo que ya quedó creado en el Escritorio de tu computador, puedes instalarla o descargar el lanzador aquí:
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 pt-1">
+              <button
+                onclick="window.installOrDownloadDesktopApp()"
+                class="px-4 py-2.5 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white text-xs font-bold flex items-center gap-2 shadow"
+              >
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Descargar / Abrir App de Escritorio (Windows)</span>
+              </button>
+              <button
+                onclick="window.requestPushNotificationPermission()"
+                class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center gap-2 shadow"
+              >
+                <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                <span>Activar y Probar Notificaciones Push</span>
+              </button>
+              <button
+                id="test-telegram-btn"
+                class="px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-bold"
+              >
+                📲 Probar Mensaje a @Telegram
+              </button>
+            </div>
+          </div>
+
+          <!-- Strategy Config Form -->
+          <form id="strategy-config-form" class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-4">
+            <h2 class="text-base font-bold">Parámetros del Algoritmo (Triple Canal 20D + RSI)</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label class="text-slate-500">Stop-Loss Estricto (%)</label>
+                <input id="cfg-sl" type="number" step="0.5" value="7.0" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="text-slate-500">Máx Capital / Acción (%)</label>
+                <input id="cfg-max-pos" type="number" step="0.5" value="10.0" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="text-slate-500">RSI Soporte / Compra</label>
+                <input id="cfg-rsi-buy" type="number" value="42" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+              <div>
+                <label class="text-slate-500">RSI Sobrecompra / Venta</label>
+                <input id="cfg-rsi-sell" type="number" value="68" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+            </div>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-zesty-purple-500 text-white font-bold text-xs">
+              Guardar Parámetros en Supabase
+            </button>
+          </form>
+
+          <!-- Password & Logout -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form id="password-form" class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-3">
+              <h2 class="text-sm font-bold">Cambiar Contraseña (`dfbe00@gmail.com`)</h2>
+              <input
+                id="new-password-input"
+                type="password"
+                placeholder="Nueva contraseña"
+                required
+                minlength="6"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+              />
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-800 text-white text-xs font-semibold">
+                Actualizar Contraseña
+              </button>
+            </form>
+
+            <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex flex-col justify-between">
+              <div>
+                <h2 class="text-sm font-bold">Sesión Propietario</h2>
+                <p class="text-xs text-slate-500 mt-1">Conectado como <b>dfbe00@gmail.com</b> · Bot <b>@dfbe00_inversiones2_bot</b></p>
+              </div>
+              <button
+                id="logout-btn"
+                class="mt-4 w-full py-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 font-bold text-xs"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
+    </div>
 
-      <div id="watchlist-cards" class="space-y-3"></div>
-    </main>
-
-    <!-- TAB 4: ASISTENTE GEMINI AI + @TELEGRAM -->
-    <main id="tab-chat" class="hidden px-4 pt-4 flex flex-col" style="height: calc(100dvh - 150px);">
-      <div class="ios-card p-3 mb-3 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
-          <div>
-            <div class="text-xs font-bold">Chat Unificado: App ↔ @dfbe00_inversiones_bot</div>
-            <div class="text-[10px] text-slate-400">Conectado a Gemini 4 Hydrogen + Portafolio Alpaca en vivo</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Prompt Chips -->
-      <div class="flex gap-1.5 overflow-x-auto pb-2 mb-2 text-[11px]">
-        <button class="chat-chip px-2.5 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 whitespace-nowrap">
-          ¿Qué recomiendas comprar hoy según el Triple Canal?
+    <!-- Mobile Bottom Navigation Bar (iPhone PWA) -->
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0E1322]/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,8px)]">
+      <div class="grid grid-cols-5 pt-2 pb-1 px-1">
+        <button data-nav="dashboard" class="mob-nav-btn flex flex-col items-center gap-0.5 text-zesty-purple-500">
+          <i data-lucide="wallet" class="w-5 h-5"></i>
+          <span class="text-[10px] font-semibold">Dashboard</span>
         </button>
-        <button class="chat-chip px-2.5 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 whitespace-nowrap">
-          Analiza GLD (Oro), SPY y NVDA
+        <button data-nav="explore" class="mob-nav-btn flex flex-col items-center gap-0.5 text-slate-400">
+          <i data-lucide="compass" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Explorar</span>
         </button>
-        <button class="chat-chip px-2.5 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 whitespace-nowrap">
-          Escanea el mercado
+        <button data-nav="options" class="mob-nav-btn flex flex-col items-center gap-0.5 text-slate-400">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Opciones</span>
         </button>
-      </div>
-
-      <!-- Messages Scroll Container -->
-      <div id="chat-messages-box" class="flex-1 overflow-y-auto space-y-2.5 pr-1 pb-3"></div>
-
-      <!-- Chat Input Bar -->
-      <form id="chat-form" class="mt-2 flex gap-2">
-        <input
-          id="chat-input"
-          type="text"
-          placeholder="Escribe a tu asistente o pide comprar/vender..."
-          required
-          class="flex-1 px-4 py-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
-        />
-        <button
-          id="chat-send-btn"
-          type="submit"
-          class="px-4 py-3 rounded-2xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-1"
-        >
-          <i data-lucide="send" class="w-4 h-4"></i>
-        </button>
-      </form>
-    </main>
-
-    <!-- TAB 5: AJUSTES & SEGURIDAD -->
-    <main id="tab-settings" class="hidden px-4 pt-4 space-y-4">
-      <div class="ios-card p-4 space-y-3">
-        <h2 class="text-base font-bold">Estado de Conexiones</h2>
-        <div class="space-y-2 text-xs">
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70">
-            <span class="text-slate-300">Cuenta Propietario (RLS)</span>
-            <span class="text-emerald-400 font-semibold">dfbe00@gmail.com (Exclusivo)</span>
-          </div>
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70">
-            <span class="text-slate-300">Alpaca Trading API</span>
-            <span id="status-alpaca" class="text-emerald-400 font-semibold">PA3XXQ6PL Conectado</span>
-          </div>
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70">
-            <span class="text-slate-300">Bot de Telegram</span>
-            <span id="status-telegram" class="text-emerald-400 font-semibold">@dfbe00_inversiones_bot</span>
-          </div>
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70">
-            <span class="text-slate-300">Motor IA Cuantitativo</span>
-            <span id="status-gemini" class="text-emerald-400 font-semibold">Gemini 4 Hydrogen</span>
-          </div>
-        </div>
-        <button
-          id="test-telegram-btn"
-          class="w-full py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-semibold text-xs"
-        >
-          📲 Enviar Mensaje de Prueba a @Telegram Ahora
-        </button>
-      </div>
-
-      <!-- Strategy Parameters Form -->
-      <form id="strategy-config-form" class="ios-card p-4 space-y-3">
-        <h2 class="text-sm font-bold">Parámetros del Algoritmo (Triple Canal 20D + RSI)</h2>
-        <div class="grid grid-cols-2 gap-3 text-xs">
-          <div>
-            <label class="text-slate-400 text-[11px]">Stop-Loss Estricto (%)</label>
-            <input id="cfg-sl" type="number" step="0.5" value="7.0" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white" />
-          </div>
-          <div>
-            <label class="text-slate-400 text-[11px]">Máx Capital por Acción (%)</label>
-            <input id="cfg-max-pos" type="number" step="0.5" value="10.0" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white" />
-          </div>
-          <div>
-            <label class="text-slate-400 text-[11px]">RSI Entrada / Soporte</label>
-            <input id="cfg-rsi-buy" type="number" value="42" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white" />
-          </div>
-          <div>
-            <label class="text-slate-400 text-[11px]">RSI Sobrecompra / Venta</label>
-            <input id="cfg-rsi-sell" type="number" value="68" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white" />
-          </div>
-        </div>
-        <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">
-          Guardar Reglas en Supabase
-        </button>
-      </form>
-
-      <!-- Change Password Form -->
-      <form id="password-form" class="ios-card p-4 space-y-3">
-        <h2 class="text-sm font-bold">Cambiar Contraseña de Acceso</h2>
-        <input
-          id="new-password-input"
-          type="password"
-          placeholder="Nueva contraseña segura"
-          required
-          minlength="8"
-          class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
-        />
-        <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs">
-          Actualizar Contraseña
-        </button>
-      </form>
-
-      <!-- iPhone PWA Install Guide & Logout -->
-      <div class="ios-card p-4 space-y-3">
-        <h2 class="text-sm font-bold">Instalar como App Nativa en tu iPhone</h2>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          En Safari en tu iPhone, toca el botón <b>Compartir</b> (cuadrado con flecha hacia arriba) y selecciona <b>"Agregar a inicio"</b> para usarla a pantalla completa como app nativa.
-        </p>
-        <button
-          id="logout-btn"
-          class="w-full py-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 font-semibold text-xs"
-        >
-          Cerrar Sesión
-        </button>
-      </div>
-    </main>
-
-    <!-- Sticky iOS Bottom Navigation Tab Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 ios-glass border-t border-slate-800/80 ios-bottom-nav">
-      <div class="max-w-md mx-auto grid grid-cols-5 pt-2 px-2">
-        <button data-tab="portfolio" class="nav-btn flex flex-col items-center gap-1 text-emerald-400">
-          <i data-lucide="pie-chart" class="w-5 h-5"></i>
-          <span class="text-[10px] font-medium">Portafolio</span>
-        </button>
-        <button data-tab="signals" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400">
+        <button data-nav="signals" class="mob-nav-btn relative flex flex-col items-center gap-0.5 text-slate-400">
           <i data-lucide="bell-ring" class="w-5 h-5"></i>
           <span class="text-[10px] font-medium">Señales</span>
-          <span id="nav-signals-badge" class="hidden absolute top-0 right-4 w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold flex items-center justify-center">0</span>
+          <span id="mob-signals-badge" class="hidden absolute top-0 right-4 w-4 h-4 rounded-full bg-zesty-purple-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
         </button>
-        <button data-tab="radar" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
-          <i data-lucide="activity" class="w-5 h-5"></i>
-          <span class="text-[10px] font-medium">Canales 20D</span>
-        </button>
-        <button data-tab="chat" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+        <button data-nav="chat" class="mob-nav-btn flex flex-col items-center gap-0.5 text-slate-400">
           <i data-lucide="bot" class="w-5 h-5"></i>
-          <span class="text-[10px] font-medium">Asistente</span>
-        </button>
-        <button data-tab="settings" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
-          <i data-lucide="sliders" class="w-5 h-5"></i>
-          <span class="text-[10px] font-medium">Ajustes</span>
+          <span class="text-[10px] font-medium">Chat &amp; Voz</span>
         </button>
       </div>
     </nav>
-  </div>
+
+    <!-- ASSET DETAIL & TRADING MODAL (Stocks, ETFs, Fixed Income, Leveraged, Options) -->
+    <div id="asset-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white dark:bg-[#0F1629] border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-2xl space-y-4">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <div id="modal-avatar" class="w-11 h-11 rounded-full border-2 border-zesty-purple-500 bg-zesty-purple-500/20 flex items-center justify-center font-extrabold text-sm text-zesty-purple-400">
+              NVDA
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 id="modal-title" class="text-lg font-extrabold">NVIDIA Corp.</h3>
+                <span id="modal-symbol-badge" class="text-xs px-2.5 py-0.5 rounded-full border border-slate-300 dark:border-slate-700 font-bold">NVDA</span>
+              </div>
+              <p id="modal-category" class="text-xs text-slate-500 dark:text-slate-400">Acciones EEUU · 7 Magníficas</p>
+            </div>
+          </div>
+          <button onclick="window.closeAssetModal()" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div class="flex items-baseline justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div>
+            <span class="text-xs text-slate-400">Precio Actual en Alpaca</span>
+            <div id="modal-price" class="text-2xl font-extrabold">US $0.00</div>
+          </div>
+          <div id="modal-change" class="text-sm font-bold text-zesty-green-500">+0.00%</div>
+        </div>
+
+        <!-- 20D Triple Channel Indicators inside Modal -->
+        <div id="modal-indicators-box" class="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+          <div class="font-bold text-zesty-purple-500">Indicadores Estrategia Triple Canal (20 Días) + RSI(14)</div>
+          <div id="modal-indicators-content" class="text-slate-600 dark:text-slate-300">Cargando análisis de 20 días desde Alpaca...</div>
+        </div>
+
+        <!-- Quick Trade Proposal Form inside Modal -->
+        <div class="p-4 rounded-xl border border-zesty-purple-500/30 bg-zesty-purple-50/50 dark:bg-zesty-purple-950/20 space-y-3">
+          <div class="text-xs font-bold">Practicar Operación en Alpaca (Con confirmación vía App o @Telegram)</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+            <div>
+              <label class="text-slate-500">Acción</label>
+              <select id="modal-trade-side" class="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-semibold">
+                <option value="buy">🟢 Comprar (Long)</option>
+                <option value="sell">🔴 Vender / Short</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-slate-500">Cantidad (Unidades)</label>
+              <input id="modal-trade-qty" type="number" step="0.01" placeholder="Auto (≤10% cap)" class="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+            </div>
+            <div class="flex items-end pb-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="modal-trade-margin" type="checkbox" class="rounded text-zesty-purple-500" />
+                <span>Apalancar (Margen 2x)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button
+              id="modal-propose-btn"
+              class="flex-1 py-3 rounded-xl bg-zesty-purple-500 hover:bg-zesty-purple-400 text-white font-bold text-xs shadow-md"
+            >
+              Generar Señal con Explicación Simple y Enviar a @Telegram
+            </button>
+            <button
+              id="modal-options-btn"
+              class="px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-xs"
+            >
+              Ver Opciones (Calls/Puts)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <script type="module" src="./app.js"></script>
 </body>

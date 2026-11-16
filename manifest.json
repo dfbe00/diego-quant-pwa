@@ -1,13 +1,13 @@
 {
-  "name": "Diego Quant · Inversiones AI",
-  "short_name": "DiegoQuant",
-  "description": "App personal de trading algorítmico (Triple Canal 20D + RSI) conectada a Alpaca, Gemini AI, Telegram y Supabase.",
+  "name": "Zesty Quant AI · Diego Bravo",
+  "short_name": "ZestyQuant",
+  "description": "Plataforma web y móvil de inversiones algorítmicas (Acciones, ETFs, Opciones Nivel 3, Renta Fija, Apalancados y Cripto) conectada a Alpaca, Gemini AI, Telegram y Supabase.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#090D16",
-  "theme_color": "#090D16",
+  "orientation": "any",
+  "background_color": "#0F172A",
+  "theme_color": "#3B0764",
   "icons": [
     {
       "src": "./icon.svg",
