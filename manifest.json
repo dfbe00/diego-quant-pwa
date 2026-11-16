@@ -1,13 +1,13 @@
 {
-  "name": "Zesty Quant AI · Diego Bravo",
-  "short_name": "ZestyQuant",
-  "description": "Plataforma web y móvil de inversiones algorítmicas (Acciones, ETFs, Opciones Nivel 3, Renta Fija, Apalancados y Cripto) conectada a Alpaca, Gemini AI, Telegram y Supabase.",
+  "name": "Steady Signal",
+  "short_name": "Steady Signal",
+  "description": "Steady Signal · Inversiones y Trading Algorítmico (Alpaca + BTG Pactual)",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0F172A",
-  "theme_color": "#3B0764",
+  "background_color": "#FFFFFF",
+  "theme_color": "#4C1D95",
   "icons": [
     {
       "src": "./icon.svg",

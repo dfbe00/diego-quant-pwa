@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zesty-quant-v2';
+const CACHE_NAME = 'steady-signal-v3';
 const ASSETS = [
   './',
   './index.html',

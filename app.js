@@ -110,7 +110,7 @@ window.requestPushNotificationPermission = async () => {
   updatePushButtonUI();
   if (perm === "granted") {
     showToast("Notificaciones activadas.");
-    await sendLocalPushNotification("Zesty", "Recibirás avisos cuando tengas una orden por confirmar.");
+    await sendLocalPushNotification("Steady Signal", "Recibirás avisos cuando tengas una orden por confirmar.");
   }
 };
 
@@ -131,7 +131,7 @@ window.installOrDownloadDesktopApp = async () => {
   }
   const batContent = [
     "@echo off",
-    "title Zesty Quant",
+    "title Steady Signal",
     'if exist "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" (',
     `  start "" "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" --app=${APP_PUBLIC_URL}`,
     "  exit",
@@ -146,7 +146,7 @@ window.installOrDownloadDesktopApp = async () => {
   const blob = new Blob([batContent], { type: "application/bat" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "Zesty_Escritorio.bat";
+  a.download = "Steady_Signal_Escritorio.bat";
   document.body.appendChild(a);
   a.click();
   a.remove();

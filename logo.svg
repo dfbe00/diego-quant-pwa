@@ -1,19 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 88">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 88">
   <defs>
-    <linearGradient id="lbg" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#4C1D95"/>
-      <stop offset="100%" stop-color="#A855F7"/>
+    <linearGradient id="ssmark" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B0764"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
     </linearGradient>
-    <linearGradient id="lacc" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F3E8FF"/>
+    <linearGradient id="ssline" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EDE9FE"/>
       <stop offset="100%" stop-color="#34D399"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="8" width="72" height="72" rx="20" fill="url(#lbg)" stroke="#C084FC" stroke-width="2"/>
-  <path d="M22 26 H58 L26 62 H60" fill="none" stroke="url(#lacc)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="60" cy="34" r="4.5" fill="#34D399"/>
-  <text x="92" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="34" font-weight="800" fill="#FFFFFF" letter-spacing="-0.8">zesty</text>
-  <text x="178" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="34" font-weight="500" fill="#DDD6FE" letter-spacing="-0.5">quant</text>
-  <rect x="275" y="28" width="46" height="22" rx="11" fill="#10B981" fill-opacity="0.25" stroke="#34D399" stroke-width="1.5"/>
-  <text x="298" y="43" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="11" font-weight="800" fill="#6EE7B7" text-anchor="middle">AI</text>
+  <rect x="4" y="8" width="72" height="72" rx="18" fill="url(#ssmark)" stroke="#A78BFA" stroke-width="1.5" stroke-opacity="0.5"/>
+  <line x1="18" y1="26" x2="62" y2="26" stroke="#C4B5FD" stroke-width="2" stroke-dasharray="4 4" opacity="0.5"/>
+  <line x1="18" y1="62" x2="62" y2="62" stroke="#C4B5FD" stroke-width="2" stroke-dasharray="4 4" opacity="0.5"/>
+  <path d="M16 48 H27 L34 32 L44 54 L54 28 L60 40 H66" fill="none" stroke="url(#ssline)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="66" cy="40" r="3.5" fill="#34D399"/>
+  <text x="92" y="54" font-family="'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="31" font-weight="700" fill="#FFFFFF" letter-spacing="-0.7">Steady</text>
+  <text x="202" y="54" font-family="'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="31" font-weight="400" fill="#DDD6FE" letter-spacing="-0.4">Signal</text>
 </svg>
