@@ -1,6 +1,6 @@
 // sw.js - Offline-First Service Worker (Cache-First for App Shell & Static Assets)
-const CACHE_NAME = 'steady-signal-shell-v5';
-const RUNTIME_CACHE = 'steady-signal-runtime-v5';
+const CACHE_NAME = 'steady-signal-shell-v6';
+const RUNTIME_CACHE = 'steady-signal-runtime-v6';
 
 const APP_SHELL_ASSETS = [
   './',

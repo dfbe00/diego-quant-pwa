@@ -1064,6 +1064,15 @@ function renderSignals() {
     }
   }
 
+  const bulkActionsEl = document.getElementById("pending-bulk-actions");
+  if (bulkActionsEl) {
+    bulkActionsEl.classList.toggle("hidden", pending.length === 0);
+    const confirmAllBtn = document.getElementById("confirm-all-signals-btn");
+    const rejectAllBtn = document.getElementById("reject-all-signals-btn");
+    if (confirmAllBtn) confirmAllBtn.textContent = `Confirmar todas (${pending.length})`;
+    if (rejectAllBtn) rejectAllBtn.textContent = `Cancelar todas (${pending.length})`;
+  }
+
   const pendingEl = document.getElementById("pending-signals-list");
   if (pendingEl) {
     if (pending.length === 0) {
@@ -1763,6 +1772,64 @@ window.rejectSignal = async (signalId) => {
     showToast(`Error: ${err.message}`, "rose");
   }
 };
+
+async function processAllPendingSignals({ action, progressMsg, successMsg, reloadPortfolio }) {
+  const pending = signalsData.filter((s) => s.status === "PENDING_CONFIRMATION");
+  if (pending.length === 0) return;
+
+  const confirmAllBtn = document.getElementById("confirm-all-signals-btn");
+  const rejectAllBtn = document.getElementById("reject-all-signals-btn");
+  if (confirmAllBtn) confirmAllBtn.disabled = true;
+  if (rejectAllBtn) rejectAllBtn.disabled = true;
+
+  let ok = 0;
+  let failed = 0;
+  let lastErr = "";
+
+  try {
+    showToast(progressMsg(pending.length));
+    for (const s of pending) {
+      try {
+        await callEngine(action, { signal_id: s.id });
+        ok += 1;
+      } catch (err) {
+        failed += 1;
+        lastErr = err.message;
+      }
+    }
+
+    await (reloadPortfolio
+      ? Promise.all([loadDatabaseData(), loadAlpacaPortfolio()])
+      : loadDatabaseData());
+
+    if (failed === 0) {
+      showToast(successMsg(ok));
+    } else if (ok > 0) {
+      showToast(`${ok} procesada(s), ${failed} con error: ${lastErr}`, "rose");
+    } else {
+      showToast(`Error: ${lastErr}`, "rose");
+    }
+  } finally {
+    if (confirmAllBtn) confirmAllBtn.disabled = false;
+    if (rejectAllBtn) rejectAllBtn.disabled = false;
+  }
+}
+
+window.confirmAllSignals = () =>
+  processAllPendingSignals({
+    action: "confirm_signal",
+    progressMsg: (n) => `Enviando ${n} orden(es) a Alpaca...`,
+    successMsg: (n) => `${n} orden(es) ejecutada(s) en Alpaca.`,
+    reloadPortfolio: true,
+  });
+
+window.rejectAllSignals = () =>
+  processAllPendingSignals({
+    action: "reject_signal",
+    progressMsg: (n) => `Cancelando ${n} orden(es) pendiente(s)...`,
+    successMsg: (n) => `${n} orden(es) cancelada(s).`,
+    reloadPortfolio: false,
+  });
 
 window.proposeQuickTrade = async (symbol, side, qty, useMargin = false) => {
   try {

@@ -803,7 +803,27 @@
           </form>
 
           <div class="space-y-3">
-            <h2 class="text-base font-bold">Pendientes de confirmación</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h2 class="text-base font-bold">Pendientes de confirmación</h2>
+              <div id="pending-bulk-actions" class="hidden flex flex-wrap gap-2">
+                <button
+                  id="confirm-all-signals-btn"
+                  type="button"
+                  onclick="window.confirmAllSignals()"
+                  class="rounded-xl px-4 py-2 text-xs font-medium bg-zesty-purple-500 hover:bg-zesty-purple-400 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+                >
+                  Confirmar todas
+                </button>
+                <button
+                  id="reject-all-signals-btn"
+                  type="button"
+                  onclick="window.rejectAllSignals()"
+                  class="rounded-xl px-4 py-2 text-xs font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Cancelar todas
+                </button>
+              </div>
+            </div>
             <div id="pending-signals-list" class="flex flex-col gap-3"></div>
           </div>
 
