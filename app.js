@@ -45,6 +45,7 @@ let isRecordingVoice = false;
 let speechRecognizer = null;
 let mediaRecorder = null;
 let audioChunks = [];
+let autoExecuteEnabled = true;
 
 let uiConfig = {
   theme_accent: "purple",
@@ -188,6 +189,82 @@ async function callEngine(action, payload = {}) {
   }
   return data;
 }
+
+function renderExecutionModeUI() {
+  const isAuto = autoExecuteEnabled !== false;
+  document.querySelectorAll(".exec-mode-toggle").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(isAuto));
+  });
+  document.querySelectorAll(".exec-mode-dot").forEach((dot) => {
+    dot.className = `exec-mode-dot mt-1 sm:mt-0 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+      isAuto ? "bg-zesty-green-500" : "bg-amber-400"
+    }`;
+  });
+  document.querySelectorAll(".exec-mode-switch-track").forEach((track) => {
+    track.className = `exec-mode-switch-track relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+      isAuto ? "bg-zesty-green-500" : "bg-slate-300 dark:bg-slate-700"
+    }`;
+  });
+  document.querySelectorAll(".exec-mode-switch-thumb").forEach((thumb) => {
+    thumb.className = `exec-mode-switch-thumb inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+      isAuto ? "translate-x-4" : "translate-x-1"
+    }`;
+  });
+  document.querySelectorAll(".exec-mode-label").forEach((lbl) => {
+    const isPill = lbl.classList.contains("rounded-full");
+    lbl.textContent = isAuto ? "Automático (Compra y Venta)" : "Con confirmación (Manual)";
+    if (isPill) {
+      const sizeClass = lbl.classList.contains("text-[11px]") ? "text-[11px]" : "text-xs";
+      lbl.className = isAuto
+        ? `exec-mode-label ${sizeClass} font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800`
+        : `exec-mode-label ${sizeClass} font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800`;
+    }
+  });
+  document.querySelectorAll(".exec-mode-desc").forEach((desc) => {
+    desc.textContent = isAuto
+      ? "Las recomendaciones de compra y venta se ejecutan solas en Alpaca y te notificamos al instante."
+      : "Cada recomendación espera tu confirmación manual en la app o por Telegram antes de ejecutarse.";
+  });
+  document.querySelectorAll(".exec-mode-btn-text").forEach((txt) => {
+    txt.textContent = isAuto ? "Cambiar a confirmación" : "Activar automático";
+  });
+}
+
+window.toggleExecutionMode = async () => {
+  autoExecuteEnabled = !autoExecuteEnabled;
+  renderExecutionModeUI();
+  await idbSetKV("autoExecuteEnabled", autoExecuteEnabled);
+
+  const payload = {
+    require_confirmation: !autoExecuteEnabled,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (!navigator.onLine) {
+    await enqueueOfflineAction({ type: "UPDATE_EXEC_MODE", payload });
+    showToast(
+      autoExecuteEnabled
+        ? "Modo automático activado (Offline): se sincronizará al volver internet."
+        : "Modo con confirmación activado (Offline): se sincronizará al volver internet."
+    );
+    return;
+  }
+
+  const { error } = await supabase.from("strategy_config").update(payload).eq("id", 1);
+  if (error) {
+    autoExecuteEnabled = !autoExecuteEnabled;
+    renderExecutionModeUI();
+    await idbSetKV("autoExecuteEnabled", autoExecuteEnabled);
+    showToast(`Error guardando modo: ${error.message}`, "rose");
+    return;
+  }
+
+  showToast(
+    autoExecuteEnabled
+      ? "Modo automático activado: las compras y ventas recomendadas se ejecutarán solas y recibirás notificación."
+      : "Modo con confirmación activado: deberás confirmar cada orden recomendada."
+  );
+};
 
 window.switchSection = (secName) => {
   currentSection = secName;
@@ -1153,16 +1230,32 @@ function renderSignals() {
       historyEl.innerHTML = `<div class="p-4 text-xs text-slate-400">Sin historial de órdenes aún.</div>`;
     } else {
       historyEl.innerHTML = history
-        .slice(0, 12)
+        .slice(0, 15)
         .map((s) => {
+          const isAuto = s.status === "CONFIRMED_EXECUTED" && s.confirmed_via === "auto";
+          const statusLabel = isAuto
+            ? "Auto-ejecutada"
+            : s.status === "CONFIRMED_EXECUTED"
+            ? "Ejecutada"
+            : s.status === "FAILED"
+            ? "Error"
+            : "Descartada";
+          const badgeStyle = isAuto
+            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300"
+            : s.status === "FAILED"
+            ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-zesty-red-500"
+            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400";
+          const when = s.resolved_at || s.created_at;
+          const dateLabel = when ? new Date(when).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" }) : "";
+
           return `
-          <div class="p-4 rounded-lg bg-neutral-50 dark:bg-slate-900 flex items-center justify-between text-xs">
+          <div class="p-4 rounded-lg bg-neutral-50 dark:bg-slate-900 flex items-center justify-between gap-3 text-xs">
             <div>
               <p class="font-bold text-slate-900 dark:text-slate-100">${s.side === "buy" ? "Compra" : "Venta"} ${s.symbol} · ${s.suggested_qty} unid. (${fmtMoney(s.suggested_notional)})</p>
-              <p class="text-slate-500 mt-0.5">${s.trigger_reason}</p>
+              <p class="text-slate-500 mt-0.5">${s.trigger_reason}${dateLabel ? ` · ${dateLabel}` : ""}</p>
             </div>
-            <span class="px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
-              ${s.status === "CONFIRMED_EXECUTED" ? "Ejecutada" : "Descartada"}
+            <span class="px-2.5 py-1 rounded-full border whitespace-nowrap ${badgeStyle}">
+              ${statusLabel}
             </span>
           </div>`;
         })
@@ -1597,7 +1690,7 @@ window.stopVoiceCapture = () => {
 async function hydrateFromIndexedDB() {
   try {
     await openLocalDB();
-    const [wl, sigs, chats, btgPos, mons, savedPortfolio, savedCatalog, savedUi, savedCurr, savedSec] =
+    const [wl, sigs, chats, btgPos, mons, savedPortfolio, savedCatalog, savedUi, savedCurr, savedSec, savedAutoExec] =
       await Promise.all([
         idbGetAll(STORES.WATCHLIST),
         idbGetAll(STORES.SIGNALS),
@@ -1609,6 +1702,7 @@ async function hydrateFromIndexedDB() {
         idbGetKV("uiConfig"),
         idbGetKV("displayCurrency"),
         idbGetKV("activeSection"),
+        idbGetKV("autoExecuteEnabled", true),
       ]);
 
     if (wl.length > 0) watchlistData = wl;
@@ -1624,8 +1718,10 @@ async function hydrateFromIndexedDB() {
     if (savedCatalog && savedCatalog.length > 0) marketCatalog = savedCatalog;
     if (savedUi) uiConfig = { ...uiConfig, ...savedUi };
     if (savedCurr) displayCurrency = savedCurr;
+    autoExecuteEnabled = savedAutoExec !== false;
 
     applyDynamicUiConfig();
+    renderExecutionModeUI();
     renderPortfolio();
     renderSignals();
     renderWatchlist();
@@ -1648,6 +1744,9 @@ async function loadDatabaseData() {
   }
 
   const prevPendingIds = new Set(signalsData.filter((s) => s.status === "PENDING_CONFIRMATION").map((s) => s.id));
+  const prevAutoExecIds = new Set(
+    signalsData.filter((s) => s.status === "CONFIRMED_EXECUTED" && s.confirmed_via === "auto").map((s) => s.id)
+  );
 
   try {
     const [{ data: wl }, { data: sigs }, { data: chats }, { data: cfg }, { data: btgPos }, { data: mons }] = await Promise.all([
@@ -1672,6 +1771,17 @@ async function loadDatabaseData() {
           s.indicators?.simple_explanation || s.trigger_reason,
           "signals"
         );
+      } else if (
+        s.status === "CONFIRMED_EXECUTED" &&
+        s.confirmed_via === "auto" &&
+        prevAutoExecIds.size > 0 &&
+        !prevAutoExecIds.has(s.id)
+      ) {
+        sendLocalPushNotification(
+          `🤖 ${s.side === "buy" ? "Compra" : "Venta"} automática: ${s.symbol}`,
+          `${s.suggested_qty} unid. (~${fmtMoney(s.suggested_notional)}) · ${s.trigger_reason}`,
+          "signals"
+        );
       }
     }
 
@@ -1680,6 +1790,9 @@ async function loadDatabaseData() {
       document.getElementById("cfg-max-pos").value = cfg.max_position_pct;
       document.getElementById("cfg-rsi-buy").value = cfg.rsi_oversold;
       document.getElementById("cfg-rsi-sell").value = cfg.rsi_overbought;
+      autoExecuteEnabled = cfg.require_confirmation !== true;
+      await idbSetKV("autoExecuteEnabled", autoExecuteEnabled);
+      renderExecutionModeUI();
       if (cfg.ui_config) {
         uiConfig = { ...uiConfig, ...cfg.ui_config };
         applyDynamicUiConfig();
@@ -1746,8 +1859,17 @@ window.runScanNow = async () => {
   try {
     showToast("Escaneando canales de 20 días...");
     const res = await callEngine("scan_market", { force_proposal: false });
-    await loadDatabaseData();
-    showToast(`Indicadores actualizados (${res.scanned} activos).`);
+    await Promise.all([loadDatabaseData(), loadAlpacaPortfolio()]);
+    const sigs = res.newSignals || [];
+    const autoCount = sigs.filter((s) => s.status === "CONFIRMED_EXECUTED").length;
+    const pendingCount = sigs.filter((s) => s.status === "PENDING_CONFIRMATION").length;
+    if (autoCount > 0) {
+      showToast(`Indicadores actualizados (${res.scanned} activos). Se ejecutaron ${autoCount} orden(es) automática(s).`);
+    } else if (pendingCount > 0) {
+      showToast(`Indicadores actualizados (${res.scanned} activos). ${pendingCount} señal(es) pendiente(s) de confirmación.`);
+    } else {
+      showToast(`Indicadores actualizados (${res.scanned} activos).`);
+    }
   } catch (err) {
     showToast(`Error: ${err.message}`, "rose");
   }
@@ -1857,6 +1979,11 @@ async function sendChatMessage(text) {
       uiConfig = res.uiConfig;
       applyDynamicUiConfig();
     }
+    if (typeof res.requireConfirmation === "boolean") {
+      autoExecuteEnabled = !res.requireConfirmation;
+      await idbSetKV("autoExecuteEnabled", autoExecuteEnabled);
+      renderExecutionModeUI();
+    }
     if (res.navigateTo) window.switchSection(res.navigateTo);
   } catch (err) {
     showToast(`Error: ${err.message}`, "rose");
@@ -1926,6 +2053,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           await callEngine("upsert_btg_position", item.payload);
         } else if (item.type === "INSERT_MONITOR") {
           await supabase.from("scheduled_monitors").insert(item.payload);
+        } else if (item.type === "UPDATE_EXEC_MODE") {
+          await supabase.from("strategy_config").update(item.payload).eq("id", 1);
         }
       });
       if (synced > 0) {

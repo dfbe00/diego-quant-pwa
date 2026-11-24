@@ -313,6 +313,35 @@
             </div>
           </div>
 
+          <!-- 1-Click Execution Mode Bar (Automático vs Con confirmación) -->
+          <div class="mb-3 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start sm:items-center gap-2.5">
+              <span class="exec-mode-dot mt-1 sm:mt-0 w-2.5 h-2.5 rounded-full bg-zesty-green-500 flex-shrink-0"></span>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold text-slate-900 dark:text-white">Modo de ejecución:</span>
+                  <span class="exec-mode-label text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    Automático (Compra y Venta)
+                  </span>
+                </div>
+                <p class="exec-mode-desc text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Las recomendaciones de compra y venta se ejecutan solas en Alpaca y te notificamos al instante.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onclick="window.toggleExecutionMode()"
+              class="exec-mode-toggle inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-zesty-purple-500 transition-colors w-fit flex-shrink-0"
+              aria-pressed="true"
+            >
+              <span class="exec-mode-switch-track relative inline-flex h-5 w-9 items-center rounded-full bg-zesty-green-500 transition-colors">
+                <span class="exec-mode-switch-thumb inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform translate-x-4"></span>
+              </span>
+              <span class="exec-mode-btn-text">Cambiar a confirmación</span>
+            </button>
+          </div>
+
           <!-- Pending Signal Quiet Bar -->
           <div id="dashboard-pending-banner" class="hidden mb-3 border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900"></div>
 
@@ -765,12 +794,25 @@
                 Revisa la explicación sencilla y confirma las operaciones antes de enviarlas a Alpaca
               </span>
             </div>
-            <button
-              id="new-proposal-toggle-btn"
-              class="rounded-xl px-4 py-2 text-sm border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 w-fit"
-            >
-              Nueva orden manual
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="window.toggleExecutionMode()"
+                class="exec-mode-toggle inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-zesty-purple-500 transition-colors"
+                aria-pressed="true"
+              >
+                <span class="exec-mode-switch-track relative inline-flex h-5 w-9 items-center rounded-full bg-zesty-green-500 transition-colors">
+                  <span class="exec-mode-switch-thumb inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform translate-x-4"></span>
+                </span>
+                <span class="exec-mode-label">Automático (Compra y Venta)</span>
+              </button>
+              <button
+                id="new-proposal-toggle-btn"
+                class="rounded-xl px-4 py-2 text-sm border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 w-fit"
+              >
+                Nueva orden manual
+              </button>
+            </div>
           </div>
 
           <form id="proposal-form" class="hidden p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-4">
@@ -1027,6 +1069,30 @@
 
           <form id="strategy-config-form" class="border border-slate-200 dark:border-slate-800 rounded-xl p-6 bg-zesty-purple-50 dark:bg-slate-900/20 space-y-4">
             <h2 class="text-base font-bold">Reglas de la estrategia (Triple Canal 20D + RSI)</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold text-slate-900 dark:text-white">Ejecución de recomendaciones</span>
+                  <span class="exec-mode-label text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    Automático (Compra y Venta)
+                  </span>
+                </div>
+                <p class="exec-mode-desc text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Las recomendaciones de compra y venta se ejecutan solas en Alpaca y te notificamos al instante.
+                </p>
+              </div>
+              <button
+                type="button"
+                onclick="window.toggleExecutionMode()"
+                class="exec-mode-toggle inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-zesty-purple-500 transition-colors w-fit flex-shrink-0"
+                aria-pressed="true"
+              >
+                <span class="exec-mode-switch-track relative inline-flex h-5 w-9 items-center rounded-full bg-zesty-green-500 transition-colors">
+                  <span class="exec-mode-switch-thumb inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform translate-x-4"></span>
+                </span>
+                <span class="exec-mode-btn-text">Cambiar a confirmación</span>
+              </button>
+            </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div>
                 <label class="text-slate-500">Stop-Loss (%)</label>
